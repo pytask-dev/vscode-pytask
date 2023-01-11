@@ -17,7 +17,8 @@
     "commands": [
       {
         "command": "pytask.build",
-        "title": "Run Pytask"
+        "title": "Run Pytask",
+        "icon": "$(run)"
       }
     ],
     "viewsContainers": {
@@ -34,13 +35,18 @@
       "pytask": [                
 
         {
-          "id": "pytask-view",    
-          "name": "Pytask",
+          "id": "tasks",    
+          "name": "Tasks",
           "type": "tree"
-        },
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
         {
-          "id": "package-outline",
-          "name": "Outline"
+          "when": "view == tasks",
+          "command": "pytask.build",
+          "group": "navigation"
         }
       ]
     }
