@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import { ProposedExtensionAPI } from './proposedApiTypes';
 import * as utils from './utils';
+import * as child from 'child_process';
 
 
 // This method is called when your extension is activated
@@ -19,12 +20,14 @@ export function activate(context: vscode.ExtensionContext) {
 	let disposable = vscode.commands.registerCommand('pytask.build', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		let term = vscode.window.createTerminal();
 		let interpreter = utils.getPytaskCommand();
 		interpreter.then((value: string) => {
 			console.log(value);
-			term.sendText(value);
-			// Expected output: "Success!"
+			let args = value.split(' ');
+			const np = child.execFile(args[0], ['-Xutf8', 'C:\\Users\\User\\pytask_vscode\\src\\pytask_wrapper.py'], { cwd : 'C:\\Users\\User\\Documents\\HiwiJob\\Pytsak_test', encoding: 'utf8'}, function(err,stdout,stderr){
+				console.log(stdout);
+				console.log(stderr);
+			});
 		  });
 	});
 
