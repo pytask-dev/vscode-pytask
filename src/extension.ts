@@ -21,11 +21,12 @@ export function activate(context: vscode.ExtensionContext) {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
 		let interpreter = utils.getPytaskCommand();
+		const channel = vscode.window.createOutputChannel("Pytask");
 		interpreter.then((value: string) => {
 			console.log(value);
 			let args = value.split(' ');
 			const np = child.execFile(args[0], ['-Xutf8', 'C:\\Users\\User\\pytask_vscode\\src\\pytask_wrapper.py'], { cwd : 'C:\\Users\\User\\Documents\\HiwiJob\\Pytsak_test', encoding: 'utf8'}, function(err,stdout,stderr){
-				console.log(stdout);
+				channel.append(stdout);
 				console.log(stderr);
 			});
 		  });
