@@ -18,3 +18,4 @@ export async function getPytaskCommand() : Promise<string>{
     let interpreter = await getInterpreter();
     return interpreter + " -m pytask";
 }
+
