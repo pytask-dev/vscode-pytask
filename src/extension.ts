@@ -21,14 +21,27 @@ export function activate(context: vscode.ExtensionContext) {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
 		let interpreter = utils.getPytaskCommand();
+		let workingdirectory = "";
+		if(vscode.workspace.workspaceFolders !== undefined) {
+			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
+			console.log(workingdirectory);
+
+		} 
+		else {
+			let message = "YOUR-EXTENSION: Working folder not found, open a folder an try again" ;
+		
+			vscode.window.showErrorMessage(message);
+		}
+		let myExtDir = vscode.extensions.getExtension ("pytask.pytask").extensionPath;
+		console.log(myExtDir);
 		interpreter.then((value: string) => {
 			console.log(value);
 			let args = value.split(' ');
-			const np = child.execFile(args[0], ['-Xutf8', 'C:\\Users\\User\\pytask_vscode\\src\\pytask_wrapper.py'], { cwd : 'C:\\Users\\User\\Documents\\HiwiJob\\Pytsak_test', encoding: 'utf8'}, function(err,stdout,stderr){
-				let messages = stdout.split('hieristderbreak');
-				channel.append(messages[0]);
-				console.log(stderr);
-				vscode.window.registerTreeDataProvider('tasks', new data.TaskProvider(messages[1]));
+			const np = child.execFile(args[0], ['-Xutf8', myExtDir + '\\src\\pytask_wrapper.py'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+				console.log(err);
+				let result = JSON.parse(stdout);
+				channel.append(result.message);
+				vscode.window.registerTreeDataProvider('tasks', new data.TaskProvider(stdout));
 			});
 		  });
 	});

@@ -6,9 +6,10 @@ export class TaskProvider implements vscode.TreeDataProvider<Task> {
 
   data: Task[];
 
-  constructor(tasks : string) {
-    let array = JSON.parse(tasks);
-    this.data = [new Task('cars', )];
+  constructor(tasks: string) {
+    let message = JSON.parse(tasks);
+    let result = message.tasks;
+    this.data = [new Task(result[0].name)];
   }
 
   getTreeItem(element: Task): vscode.TreeItem|Thenable<vscode.TreeItem> {
