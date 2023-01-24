@@ -38,7 +38,7 @@ export function activate(context: vscode.ExtensionContext) {
 			console.log(value);
 			let args = value.split(' ');
 			const np = child.execFile(args[0], ['-Xutf8', myExtDir + '\\bundled\\pytask_wrapper.py'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
-				channel.append(String(err));
+				console.log(stderr);
 				let result = JSON.parse(stdout);
 				channel.append(result.message);
 				vscode.window.registerTreeDataProvider('tasks', new data.TaskProvider(stdout));
