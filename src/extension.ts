@@ -32,13 +32,13 @@ export function activate(context: vscode.ExtensionContext) {
 		
 			vscode.window.showErrorMessage(message);
 		}
-		let myExtDir = vscode.extensions.getExtension ("pytask.pytask").extensionPath;
+		let myExtDir = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
 		console.log(myExtDir);
 		interpreter.then((value: string) => {
 			console.log(value);
 			let args = value.split(' ');
-			const np = child.execFile(args[0], ['-Xutf8', myExtDir + '\\src\\pytask_wrapper.py'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
-				console.log(err);
+			const np = child.execFile(args[0], ['-Xutf8', myExtDir + '\\bundled\\pytask_wrapper.py'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+				channel.append(String(err));
 				let result = JSON.parse(stdout);
 				channel.append(result.message);
 				vscode.window.registerTreeDataProvider('tasks', new data.TaskProvider(stdout));
