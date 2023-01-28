@@ -20,7 +20,7 @@ export function activate(context: vscode.ExtensionContext) {
 	let disposable = vscode.commands.registerCommand('pytask.build', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		let interpreter = utils.getPytaskCommand();
+		let interpreter = utils.getInterpreter();
 		let workingdirectory = "";
 		if(vscode.workspace.workspaceFolders !== undefined) {
 			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
@@ -35,10 +35,11 @@ export function activate(context: vscode.ExtensionContext) {
 		let myExtDir = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
 		console.log(myExtDir);
 		interpreter.then((value: string) => {
-			console.log(value);
-			let args = value.split(' ');
-			const np = child.execFile(args[0], ['-Xutf8', myExtDir + '\\bundled\\pytask_wrapper.py'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+			const np = child.execFile(value, ['-Xutf8', myExtDir + '\\bundled\\pytask_wrapper.py'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
 				console.log(stderr);
+				if (stderr.length >= 2) {
+					vscode.window.showErrorMessage(stderr);
+				}
 				let result = JSON.parse(stdout);
 				channel.append(result.message);
 				vscode.window.registerTreeDataProvider('tasks', new data.TaskProvider(stdout));
