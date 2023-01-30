@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import * as utils from './utils';
 import * as child from 'child_process';
 import * as data from './TaskProvider';
+import * as path from 'path';
 
 
 // This method is called when your extension is activated
@@ -32,10 +33,12 @@ export function activate(context: vscode.ExtensionContext) {
 		
 			vscode.window.showErrorMessage(message);
 		}
-		let myExtDir = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
+		let myExtDirabs = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
+		let myExtDir = path.parse(myExtDirabs);
+		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		console.log(myExtDir);
 		interpreter.then((value: string) => {
-			const np = child.execFile(value, ['-Xutf8', myExtDir + '\\bundled\\pytask_wrapper.py'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+			const np = child.execFile(value, ['-Xutf8', path.resolve(myExtDirabs)], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
 				console.log(stderr);
 				if (stderr.length >= 2) {
 					vscode.window.showErrorMessage(stderr);
