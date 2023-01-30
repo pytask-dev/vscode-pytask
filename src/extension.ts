@@ -18,6 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
+	vscode.commands.registerCommand('pytask.onClick', (e) => data.onClick(e));
 	let disposable = vscode.commands.registerCommand('pytask.build', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user

@@ -21,6 +21,10 @@
         "command": "pytask.build",
         "title": "Run Pytask",
         "icon": "$(run)"
+      },
+      {
+        "command": "pytask.onClick",
+        "title": "pytask.onClick"
       }
     ],
     "viewsContainers": {
