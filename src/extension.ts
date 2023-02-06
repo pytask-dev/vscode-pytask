@@ -14,6 +14,47 @@ export function activate(context: vscode.ExtensionContext) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "pytask" is now active!');
+	const controller = vscode.tests.createTestController(
+		'pytask',
+		'Pytask'
+	  );
+	controller.resolveHandler = async test => {
+		if (!test) {
+			let interpreter = utils.getInterpreter();
+			let workingdirectory = "";
+			if(vscode.workspace.workspaceFolders !== undefined) {
+				workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
+				console.log(workingdirectory);
+	
+			} 
+			else {
+				let message = "Working folder not found, open a folder and try again" ;
+			
+				vscode.window.showErrorMessage(message);
+			}
+			let myExtDirabs = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
+			let myExtDir = path.parse(myExtDirabs);
+			myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
+			console.log(myExtDir);
+			interpreter.then((value: string) => {
+				const np = child.execFile(value, ['-Xutf8', path.resolve(myExtDirabs)], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+					console.log(stderr);
+					if (stderr.length >= 2) {
+						vscode.window.showErrorMessage(stderr);
+					}
+					let result = JSON.parse(stdout);
+					channel.append(result.message);
+					channel.append(result.tasks);
+					for (const task of result.tasks) {
+						let testitem = controller.createTestItem(task.name,task.name);
+						controller.items.add(testitem);
+					}
+					
+				});
+			});
+		
+		}
+	  };
 	const channel = vscode.window.createOutputChannel("Pytask");
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
@@ -30,7 +71,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		} 
 		else {
-			let message = "YOUR-EXTENSION: Working folder not found, open a folder an try again" ;
+			let message = "Working folder not found, open a folder and try again" ;
 		
 			vscode.window.showErrorMessage(message);
 		}
