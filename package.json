@@ -12,7 +12,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:pytask.helloWorld"
+    "onStartupFinished"
   ],
   "main": "./dist/extension.js",
   "contributes": {
