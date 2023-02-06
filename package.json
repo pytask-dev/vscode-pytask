@@ -16,44 +16,8 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "pytask.build",
-        "title": "Run Pytask",
-        "icon": "$(run)"
-      },
-      {
-        "command": "pytask.onClick",
-        "title": "pytask.onClick"
-      }
-    ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "pytask",
-          "title": "Pytask",
-          "icon": "media/pytask.svg"
-        }
-      ]
-    },
-    "views": {
-      "pytask": [
-        {
-          "id": "tasks",
-          "name": "Tasks",
-          "type": "tree"
-        }
-      ]
-    },
-    "menus": {
-      "view/title": [
-        {
-          "when": "view == tasks",
-          "command": "pytask.build",
-          "group": "navigation"
-        }
-      ]
-    }
+    
+    
   },
   "extensionDependencies": ["ms-python.python"],
   "scripts": {

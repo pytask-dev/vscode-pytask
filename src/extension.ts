@@ -3,7 +3,6 @@
 import * as vscode from 'vscode';
 import * as utils from './utils';
 import * as child from 'child_process';
-import * as data from './TaskProvider';
 import * as path from 'path';
 
 
@@ -17,52 +16,28 @@ export function activate(context: vscode.ExtensionContext) {
 	const controller = vscode.tests.createTestController(
 		'pytask',
 		'Pytask'
-	  );
-	controller.resolveHandler = async test => {
-		if (!test) {
-			let interpreter = utils.getInterpreter();
-			let workingdirectory = "";
-			if(vscode.workspace.workspaceFolders !== undefined) {
-				workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
-				console.log(workingdirectory);
-	
-			} 
-			else {
-				let message = "Working folder not found, open a folder and try again" ;
-			
-				vscode.window.showErrorMessage(message);
-			}
-			let myExtDirabs = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
-			let myExtDir = path.parse(myExtDirabs);
-			myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
-			console.log(myExtDir);
-			interpreter.then((value: string) => {
-				const np = child.execFile(value, ['-Xutf8', path.resolve(myExtDirabs)], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
-					console.log(stderr);
-					if (stderr.length >= 2) {
-						vscode.window.showErrorMessage(stderr);
-					}
-					let result = JSON.parse(stdout);
-					channel.append(result.message);
-					channel.append(result.tasks);
-					for (const task of result.tasks) {
-						let testitem = controller.createTestItem(task.name,task.name);
-						controller.items.add(testitem);
-					}
-					
-				});
-			});
-		
-		}
-	  };
+	);
 	const channel = vscode.window.createOutputChannel("Pytask");
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	vscode.commands.registerCommand('pytask.onClick', (e) => data.onClick(e));
-	let disposable = vscode.commands.registerCommand('pytask.build', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
+	controller.resolveHandler = async test => {
+		collctTasks();
+	};
+	function runHandler(
+		shouldDebug: boolean,
+		request: vscode.TestRunRequest,
+		token: vscode.CancellationToken
+	  ) {
+		const run = controller.createTestRun(request);
+		runPytask(run);
+	}
+	  
+	const runProfile = controller.createRunProfile(
+		'Run',
+		vscode.TestRunProfileKind.Run,
+		(request, token) => {
+		  runHandler(false, request, token);
+		}
+	);
+	async function collctTasks() {
 		let interpreter = utils.getInterpreter();
 		let workingdirectory = "";
 		if(vscode.workspace.workspaceFolders !== undefined) {
@@ -80,19 +55,62 @@ export function activate(context: vscode.ExtensionContext) {
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		console.log(myExtDir);
 		interpreter.then((value: string) => {
-			const np = child.execFile(value, ['-Xutf8', path.resolve(myExtDirabs)], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+			const np = child.execFile(value, ['-Xutf8', path.resolve(myExtDirabs), 'collect'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+				console.log(stderr);
+				if (stderr.length >= 2) {
+					vscode.window.showErrorMessage(stderr);
+				}
+				let result = JSON.parse(stdout);
+				for (const task of result.tasks) {
+					let uri = vscode.Uri.file(task.path);
+					let testitem = controller.createTestItem(task.name,task.name,uri);
+					controller.items.add(testitem);
+				}
+				
+			});
+		});
+	}
+	function runPytask(run : vscode.TestRun) {
+		let interpreter = utils.getInterpreter();
+		let workingdirectory = "";
+		if(vscode.workspace.workspaceFolders !== undefined) {
+			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
+			console.log(workingdirectory);
+
+		} 
+		else {
+			let message = "Working folder not found, open a folder and try again" ;
+		
+			vscode.window.showErrorMessage(message);
+		}
+		let myExtDirabs = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
+		let myExtDir = path.parse(myExtDirabs);
+		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
+		console.log(myExtDir);
+		interpreter.then((value: string) => {
+			const np = child.execFile(value, ['-Xutf8', path.resolve(myExtDirabs), 'build'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
 				console.log(stderr);
 				if (stderr.length >= 2) {
 					vscode.window.showErrorMessage(stderr);
 				}
 				let result = JSON.parse(stdout);
 				channel.append(result.message);
-				vscode.window.registerTreeDataProvider('tasks', new data.TaskProvider(stdout));
+				for (const task of result.tasks) {
+					if (task.report !== 'FAILED' && task.report !== 'SKIP_PREVIOUS_FAILED'){
+						run.passed(controller.items.get(task.name)!);
+					} else {
+						run.failed(controller.items.get(task.name)!, new vscode.TestMessage('failed'));
+					}
+				}
+				run.end();
 			});
-		  });
-	});
+		});
+	}
+	// The command has been defined in the package.json file
+	// Now provide the implementation of the command with registerCommand
+	// The commandId parameter must match the command field in package.json
+	
 
-	context.subscriptions.push(disposable);
 }
 
 // This method is called when your extension is deactivated
