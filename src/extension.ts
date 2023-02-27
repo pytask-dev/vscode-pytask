@@ -17,10 +17,12 @@ export function activate(context: vscode.ExtensionContext) {
 		'pytask',
 		'Pytask'
 	);
+	//Creates the pytask channel, where the Pytask CLI Output will be displayed
 	const channel = vscode.window.createOutputChannel("Pytask");
 	controller.resolveHandler = async test => {
 		collctTasks();
 	};
+	//Is used when a test is run
 	function runHandler(
 		shouldDebug: boolean,
 		request: vscode.TestRunRequest,
@@ -29,7 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const run = controller.createTestRun(request);
 		runPytask(run);
 	}
-	  
+	// The Run Profile will be used when you want to run a test in VSCode
 	const runProfile = controller.createRunProfile(
 		'Run',
 		vscode.TestRunProfileKind.Run,
@@ -37,9 +39,12 @@ export function activate(context: vscode.ExtensionContext) {
 		  runHandler(false, request, token);
 		}
 	);
+	// Collects all the Tasks to display them in the Test View
 	async function collctTasks() {
+		//Selecting the python interpreter
 		let interpreter = utils.getInterpreter();
 		let workingdirectory = "";
+		//Find the folder that is currently opened
 		if(vscode.workspace.workspaceFolders !== undefined) {
 			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
 			console.log(workingdirectory);
@@ -50,16 +55,19 @@ export function activate(context: vscode.ExtensionContext) {
 		
 			vscode.window.showErrorMessage(message);
 		}
+		//Find the install location of the plugin
 		let myExtDirabs = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
 		let myExtDir = path.parse(myExtDirabs);
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		console.log(myExtDir);
+		//When the Interpreter is found, run the Pytask Wrapper Script to collect the tasks
 		interpreter.then((value: string) => {
 			const np = child.execFile(value, ['-Xutf8', path.resolve(myExtDirabs), 'collect'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
 				console.log(stderr);
 				if (stderr.length >= 2) {
 					vscode.window.showErrorMessage(stderr);
 				}
+				//Parse the JSON that is printed to stdout by the wrapper script and add every task as a test item
 				let result = JSON.parse(stdout);
 				for (const task of result.tasks) {
 					let uri = vscode.Uri.file(task.path);
@@ -70,9 +78,12 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 		});
 	}
+	//Run all Tasks
 	function runPytask(run : vscode.TestRun) {
+		//Find the python interpreter
 		let interpreter = utils.getInterpreter();
 		let workingdirectory = "";
+		//Find the current working directory
 		if(vscode.workspace.workspaceFolders !== undefined) {
 			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
 			console.log(workingdirectory);
@@ -83,10 +94,12 @@ export function activate(context: vscode.ExtensionContext) {
 		
 			vscode.window.showErrorMessage(message);
 		}
+		//Find the plugins install location
 		let myExtDirabs = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
 		let myExtDir = path.parse(myExtDirabs);
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		console.log(myExtDir);
+		//Run the Wrapper Script with the build command
 		interpreter.then((value: string) => {
 			const np = child.execFile(value, ['-Xutf8', path.resolve(myExtDirabs), 'build'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
 				console.log(stderr);
@@ -94,7 +107,9 @@ export function activate(context: vscode.ExtensionContext) {
 					vscode.window.showErrorMessage(stderr);
 				}
 				let result = JSON.parse(stdout);
+				//Send Pytasks CLI Output to the VSCode Output channel
 				channel.append(result.message);
+				//Parse the Run results from pytask and send them to the Test API
 				for (const task of result.tasks) {
 					if (task.report !== 'FAILED' && task.report !== 'SKIP_PREVIOUS_FAILED'){
 						run.passed(controller.items.get(task.name)!);
@@ -106,9 +121,6 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 		});
 	}
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
 	
 
 }

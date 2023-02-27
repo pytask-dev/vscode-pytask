@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { ProposedExtensionAPI } from './proposedApiTypes';
 
-
+//This function uses the Python Plugins API to locate the currently selected python interpreter
 export async function getInterpreter(): Promise<string> {
     const extension = vscode.extensions.getExtension('ms-python.python');
     let path;
