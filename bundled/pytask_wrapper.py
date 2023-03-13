@@ -11,7 +11,7 @@ def toDict(session: pytask.Session, message: str):
         for i in session.execution_reports:
             if i.task == task:
                 report = str(i.outcome)
-        attrs = {"name" : task.base_name, "path" : task.path, "report" : report}
+        attrs = {"name" : task.base_name, "path" : str(task.path), "report" : report}
         list.append(attrs)
     result = {"message" : message, "tasks" : list}
     return result

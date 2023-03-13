@@ -22,6 +22,9 @@ export function activate(context: vscode.ExtensionContext) {
 	controller.resolveHandler = async test => {
 		collctTasks();
 	};
+	controller.refreshHandler = async test => {
+		collctTasks();
+	};
 	//Is used when a test is run
 	function runHandler(
 		shouldDebug: boolean,
@@ -71,12 +74,13 @@ export function activate(context: vscode.ExtensionContext) {
 				//Parse the JSON that is printed to stdout by the wrapper script and add every task as a test item
 				let result = JSON.parse(stdout);
 				console.log(result);
+				let collection = [];
 				for (const task of result.tasks) {
 					let uri = vscode.Uri.file(task.path);
 					let testitem = controller.createTestItem(task.name,task.name,uri);
-					controller.items.add(testitem);
+					collection.push(testitem);
 				}
-				
+				controller.items.replace(collection);
 			});
 		});
 	}
