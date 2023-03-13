@@ -62,13 +62,15 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log(myExtDir);
 		//When the Interpreter is found, run the Pytask Wrapper Script to collect the tasks
 		interpreter.then((value: string) => {
-			const np = child.execFile(value, ['-Xutf8', path.resolve(myExtDirabs), 'collect'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+			console.log(interpreter);
+			const np = child.execFile(value, ['-Xutf8', path.resolve(myExtDirabs), 'dry'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
 				console.log(stderr);
 				if (stderr.length >= 2) {
 					vscode.window.showErrorMessage(stderr);
 				}
 				//Parse the JSON that is printed to stdout by the wrapper script and add every task as a test item
 				let result = JSON.parse(stdout);
+				console.log(result);
 				for (const task of result.tasks) {
 					let uri = vscode.Uri.file(task.path);
 					let testitem = controller.createTestItem(task.name,task.name,uri);
@@ -111,7 +113,8 @@ export function activate(context: vscode.ExtensionContext) {
 				channel.append(result.message);
 				//Parse the Run results from pytask and send them to the Test API
 				for (const task of result.tasks) {
-					if (task.report !== 'FAILED' && task.report !== 'SKIP_PREVIOUS_FAILED'){
+					console.log(task.report);
+					if (task.report !== 'TaskOutcome.FAIL' && task.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
 						run.passed(controller.items.get(task.name)!);
 					} else {
 						run.failed(controller.items.get(task.name)!, new vscode.TestMessage('failed'));
