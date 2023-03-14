@@ -6,6 +6,8 @@ import * as child from 'child_process';
 import * as path from 'path';
 
 
+
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -21,6 +23,10 @@ export function activate(context: vscode.ExtensionContext) {
 	const channel = vscode.window.createOutputChannel("Pytask");
 	controller.resolveHandler = async test => {
 		collctTasks();
+		const watcher = vscode.workspace.createFileSystemWatcher('**/*.py');
+		watcher.onDidChange(uri => {collctTasks();}); // listen to files being changed
+		watcher.onDidCreate(uri => {collctTasks();}); // listen to files/folders being created
+		watcher.onDidDelete(uri => {collctTasks();}); // listen to files/folders getting deleted
 	};
 	controller.refreshHandler = async test => {
 		collctTasks();
@@ -31,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
 		request: vscode.TestRunRequest,
 		token: vscode.CancellationToken
 	  ) {
-		const run = controller.createTestRun(request);
+		const run = controller.createTestRun(request,'Pytask',false);
 		runPytask(run);
 	}
 	// The Run Profile will be used when you want to run a test in VSCode
@@ -133,4 +139,6 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+	
+}
