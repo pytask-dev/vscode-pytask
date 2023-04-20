@@ -21,6 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const channel = vscode.window.createOutputChannel("Pytask");
 	controller.resolveHandler = async test => {
 		collctTasks();
+		vscode.commands.executeCommand('testing.clearTestResults');
 	};
 	controller.refreshHandler = async test => {
 		collctTasks();
@@ -31,7 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
 		request: vscode.TestRunRequest,
 		token: vscode.CancellationToken
 	  ) {
-		const run = controller.createTestRun(request);
+		const run = controller.createTestRun(request, undefined,false);
 		runPytask(run);
 	}
 	// The Run Profile will be used when you want to run a test in VSCode
@@ -86,6 +87,7 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 	//Run all Tasks
 	function runPytask(run : vscode.TestRun) {
+		console.log("Running");
 		//Find the python interpreter
 		let interpreter = utils.getInterpreter();
 		let workingdirectory = "";
@@ -104,7 +106,6 @@ export function activate(context: vscode.ExtensionContext) {
 		let myExtDirabs = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
 		let myExtDir = path.parse(myExtDirabs);
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
-		console.log(myExtDir);
 		//Run the Wrapper Script with the build command
 		interpreter.then((value: string) => {
 			const np = child.execFile(value, ['-Xutf8', path.resolve(myExtDirabs), 'build'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
@@ -117,7 +118,6 @@ export function activate(context: vscode.ExtensionContext) {
 				channel.append(result.message);
 				//Parse the Run results from pytask and send them to the Test API
 				for (const task of result.tasks) {
-					console.log(task.report);
 					if (task.report !== 'TaskOutcome.FAIL' && task.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
 						run.passed(controller.items.get(task.name)!);
 					} else {
