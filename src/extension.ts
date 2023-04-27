@@ -19,7 +19,7 @@ const actions = {
 };
 
 // cleanup inconsitent line breaks
-const formatText = (text: string) => `\r${text.split(/(\r?\n)/g).join("\r")}\r`;
+const formatText = (text: string) => `${text.replace(/[\r\n]+/g,"\r\n")}`;
 
 
 // This method is called when your extension is activated
@@ -194,7 +194,7 @@ export function activate(context: vscode.ExtensionContext) {
 			
 			const pytask = child.spawn(value, ['-Xutf8','-m','pytask', '--pdb'], { cwd : workingdirectory});
 			pytask.stdout.on('data', (data) => {
-				writeEmitter.fire(formatText(data));
+				writeEmitter.fire(formatText(`${data}`));
 			});
 			pytask.stderr.on('data', (data) => {
 				writeEmitter.fire(data);
