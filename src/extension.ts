@@ -6,6 +6,20 @@ import * as child from 'child_process';
 import * as path from 'path';
 
 
+// Settings
+const defaultLine = "(Pdb++)";
+const keys = {
+  enter: "\r",
+  backspace: "\x7f",
+};
+const actions = {
+  cursorBack: "\x1b[D",
+  deleteChar: "\x1b[P",
+  clear: "\x1b[2J\x1b[3J\x1b[;H",
+};
+
+// cleanup inconsitent line breaks
+const formatText = (text: string) => `\r${text.split(/(\r?\n)/g).join("\r")}\r`;
 
 
 // This method is called when your extension is activated
@@ -15,10 +29,13 @@ export function activate(context: vscode.ExtensionContext) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "pytask" is now active!');
+	const writeEmitter = new vscode.EventEmitter<string>();
 	const controller = vscode.tests.createTestController(
 		'pytask',
 		'Pytask'
 	);
+	vscode.commands.executeCommand('testing.clearTestResults');
+
 	//Creates the pytask channel, where the Pytask CLI Output will be displayed
 	const channel = vscode.window.createOutputChannel("Pytask");
 	controller.resolveHandler = async test => {
@@ -38,8 +55,15 @@ export function activate(context: vscode.ExtensionContext) {
 		request: vscode.TestRunRequest,
 		token: vscode.CancellationToken
 	  ) {
-		const run = controller.createTestRun(request,'Pytask',false);
-		runPytask(run);
+		if (shouldDebug === false){
+			const run = controller.createTestRun(request,'Pytask',false);
+			runPytask(run);
+		}
+		if (shouldDebug === true){
+			const run = controller.createTestRun(request,'Pytask',false);
+			runPytask(run);
+			debugTasks();
+		}
 	}
 	// The Run Profile will be used when you want to run a test in VSCode
 	const runProfile = controller.createRunProfile(
@@ -49,6 +73,15 @@ export function activate(context: vscode.ExtensionContext) {
 		  runHandler(false, request, token);
 		}
 	);
+
+	const debugProfile = controller.createRunProfile(
+		'Debug',
+		vscode.TestRunProfileKind.Debug,
+		(request, token) => {
+		  runHandler(true, request, token);
+		}
+	  );
+
 	// Collects all the Tasks to display them in the Test View
 	async function collctTasks() {
 		//Selecting the python interpreter
@@ -132,6 +165,82 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 				run.end();
 			});
+		});
+	}
+	async function debugTasks() {
+		//Selecting the python interpreter
+		let interpreter = utils.getInterpreter();
+		let workingdirectory = "";
+		//Find the folder that is currently opened
+		if(vscode.workspace.workspaceFolders !== undefined) {
+			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
+			console.log(workingdirectory);
+
+		} 
+		else {
+			let message = "Working folder not found, open a folder and try again" ;
+		
+			vscode.window.showErrorMessage(message);
+		}
+		let content = defaultLine;
+		
+		//Find the install location of the plugin
+		let myExtDirabs = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
+		let myExtDir = path.parse(myExtDirabs);
+		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
+		console.log(myExtDir);
+		//When the Interpreter is found, run the Pytask Wrapper Script to collect the tasks
+		interpreter.then((value: string) => {
+			
+			const pytask = child.spawn(value, ['-Xutf8','-m','pytask', '--pdb'], { cwd : workingdirectory});
+			pytask.stdout.on('data', (data) => {
+				console.log(`${data}`);
+				writeEmitter.fire(`${data}`);
+			});
+			pytask.stderr.on('data', (data) => {
+				console.log(`stdout: ${data}`);
+				writeEmitter.fire(data);
+			});
+			
+			const pty = {
+				onDidWrite: writeEmitter.event,
+				open: () => {},
+				close: () => {},
+				handleInput: async (char: string) => {
+				switch (char) {
+					case keys.enter:
+					// preserve the run command line for history
+					writeEmitter.fire(`\r${content}\r\n`);
+					// trim off leading default prompt
+					const command = content.slice(defaultLine.length);
+					try {
+						pytask.stdin.write(`${command}\r\n`);
+					} catch (error) {
+						writeEmitter.fire(`error`);
+					}
+					content = defaultLine;
+					writeEmitter.fire(`\r${content}`);
+					case keys.backspace:
+					if (content.length <= defaultLine.length) {
+						return;
+					}
+					// remove last character
+					content = content.substr(0, content.length - 1);
+					writeEmitter.fire(actions.cursorBack);
+					writeEmitter.fire(actions.deleteChar);
+					return;
+					default:
+					// typing a new character
+					content += char;
+					writeEmitter.fire(char);
+				}
+				},
+			};
+			const terminal = (<any>vscode.window).createTerminal({
+				name: `Pytask Terminal`,
+				pty,
+			  });
+			terminal.show();
 		});
 	}
 	
