@@ -207,30 +207,29 @@ export function activate(context: vscode.ExtensionContext) {
 				handleInput: async (char: string) => {
 				switch (char) {
 					case keys.enter:
-					// preserve the run command line for history
-					writeEmitter.fire(`\r${content}\r\n`);
-					// trim off leading default prompt
-					const command = content.slice(defaultLine.length);
-					try {
-						pytask.stdin.write(`${command}\r\n`);
-					} catch (error) {
-						writeEmitter.fire(`error`);
-					}
-					content = defaultLine;
-					writeEmitter.fire(`\r${content}`);
+						// preserve the run command line for history
+						writeEmitter.fire(`\r\n`)
+						// trim off leading default prompt
+						const command = content.slice(defaultLine.length);
+						try {
+							pytask.stdin.write(`${command}\r\n`);
+						} catch (error) {
+							writeEmitter.fire(`error`);
+						}
+						content = defaultLine;
 					case keys.backspace:
-					if (content.length <= defaultLine.length) {
+						if (content.length <= defaultLine.length) {
+							return;
+						}
+						// remove last character
+						content = content.substr(0, content.length - 1);
+						writeEmitter.fire(actions.cursorBack);
+						writeEmitter.fire(actions.deleteChar);
 						return;
-					}
-					// remove last character
-					content = content.substr(0, content.length - 1);
-					writeEmitter.fire(actions.cursorBack);
-					writeEmitter.fire(actions.deleteChar);
-					return;
 					default:
-					// typing a new character
-					content += char;
-					writeEmitter.fire(char);
+						// typing a new character
+						content += char;
+						writeEmitter.fire(char);
 				}
 				},
 			};
