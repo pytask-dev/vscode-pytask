@@ -194,11 +194,9 @@ export function activate(context: vscode.ExtensionContext) {
 			
 			const pytask = child.spawn(value, ['-Xutf8','-m','pytask', '--pdb'], { cwd : workingdirectory});
 			pytask.stdout.on('data', (data) => {
-				console.log(`${data}`);
 				writeEmitter.fire(`${data}`);
 			});
 			pytask.stderr.on('data', (data) => {
-				console.log(`stdout: ${data}`);
 				writeEmitter.fire(data);
 			});
 			
