@@ -23,4 +23,13 @@ export async function getInterpreter(): Promise<string> {
         
     
 }
+export function checkOpenTerminal(terminals: readonly vscode.Terminal[]): vscode.Terminal | undefined{
+    let value;
+    terminals.forEach(term => {
+        if (term.name === 'Pytask Terminal'){
+            value = term;
+        }
+    });
+    return value;
+}
 

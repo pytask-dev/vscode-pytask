@@ -35,7 +35,6 @@ export function activate(context: vscode.ExtensionContext) {
 		'Pytask'
 	);
 	vscode.commands.executeCommand('testing.clearTestResults');
-
 	//Creates the pytask channel, where the Pytask CLI Output will be displayed
 	const channel = vscode.window.createOutputChannel("Pytask");
 	controller.resolveHandler = async test => {
@@ -208,7 +207,7 @@ export function activate(context: vscode.ExtensionContext) {
 				switch (char) {
 					case keys.enter:
 						// preserve the run command line for history
-						writeEmitter.fire(`\r\n`)
+						writeEmitter.fire(`\r\n`);
 						// trim off leading default prompt
 						const command = content.slice(defaultLine.length);
 						try {
@@ -233,11 +232,23 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 				},
 			};
-			const terminal = (<any>vscode.window).createTerminal({
+			const term = utils.checkOpenTerminal(vscode.window.terminals);
+			if (term !== undefined){
+				term.dispose();
+				const terminal = vscode.window.createTerminal({
+					name: `Pytask Terminal`,
+					pty,
+					});
+				terminal.show();
+			} else {
+				const terminal = vscode.window.createTerminal({
 				name: `Pytask Terminal`,
 				pty,
-			  });
-			terminal.show();
+				});
+				terminal.show();
+			}
+			
+			
 		});
 	}
 	
