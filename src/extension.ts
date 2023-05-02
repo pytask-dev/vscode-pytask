@@ -208,7 +208,7 @@ export function activate(context: vscode.ExtensionContext) {
 				switch (char) {
 					case keys.enter:
 						// preserve the run command line for history
-						writeEmitter.fire(`\r\n`)
+						writeEmitter.fire(`\r\n`);
 						// trim off leading default prompt
 						const command = content.slice(defaultLine.length);
 						try {
