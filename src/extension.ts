@@ -129,7 +129,7 @@ export function activate(context: vscode.ExtensionContext) {
 		});
 	}
 	//Run all Tasks
-	function runPytask(run : vscode.TestRun) {
+	async function runPytask(run : vscode.TestRun) {
 		//Find the python interpreter
 		let interpreter = utils.getInterpreter();
 		let workingdirectory = "";
