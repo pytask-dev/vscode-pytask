@@ -6,7 +6,7 @@ import * as child from 'child_process';
 import * as path from 'path';
 
 
-// Settings
+// Settings for the pseudoterminal
 const defaultLine = "(Pdb++)";
 const keys = {
   enter: "\r",
@@ -49,7 +49,7 @@ export function activate(context: vscode.ExtensionContext) {
 	controller.refreshHandler = async test => {
 		collctTasks();
 	};
-	//Is used when a test is run
+	//Is used when the user starts a pytask run
 	function runHandler(
 		shouldDebug: boolean,
 		request: vscode.TestRunRequest,
@@ -65,22 +65,22 @@ export function activate(context: vscode.ExtensionContext) {
 			debugTasks();
 		}
 	}
-	// The Run Profile will be used when you want to run a test in VSCode
+	// The Run Profile for Running all Tasks
 	const runProfile = controller.createRunProfile(
-		'Run',
+		'Run Pytask',
 		vscode.TestRunProfileKind.Run,
 		(request, token) => {
 		  runHandler(false, request, token);
 		}
 	);
-
+	//The Debug Profile for starting pytask in debug mode
 	const debugProfile = controller.createRunProfile(
-		'Debug',
+		'Debug Tasks',
 		vscode.TestRunProfileKind.Debug,
 		(request, token) => {
 		  runHandler(true, request, token);
 		}
-	  );
+	);
 
 	// Collects all the Tasks to display them in the Test View
 	async function collctTasks() {
