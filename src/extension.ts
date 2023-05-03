@@ -1,5 +1,3 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as utils from './utils';
 import * as child from 'child_process';
@@ -18,12 +16,11 @@ const actions = {
   clear: "\x1b[2J\x1b[3J\x1b[;H",
 };
 
-// cleanup inconsitent line breaks
+// Cleanup inconsitent line breaks
 const formatText = (text: string) => `${text.replace(/[\r\n]+/g,"\r\n")}`;
 
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+// This method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
@@ -203,7 +200,7 @@ export function activate(context: vscode.ExtensionContext) {
 				pytask.stderr.on('data', (data) => {
 					vscode.window.showErrorMessage(data);
 				});
-				// Define the pseudoterminal used to communicate witch pytask
+				// Define the pseudoterminal used to communicate witch pytask, only very limited functionality
 				const pty = {
 					onDidWrite: writeEmitter.event,
 					open: () => {},
