@@ -100,6 +100,10 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		//Find the install location of the plugin
 		let myExtDirabs = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
+		if (myExtDirabs === undefined){
+			let message = "Could not find extension path!";
+			vscode.window.showErrorMessage(message);
+		}
 		let myExtDir = path.parse(myExtDirabs);
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		console.log(myExtDir);
@@ -126,7 +130,6 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 	//Run all Tasks
 	function runPytask(run : vscode.TestRun) {
-		console.log("Running");
 		//Find the python interpreter
 		let interpreter = utils.getInterpreter();
 		let workingdirectory = "";
@@ -143,6 +146,10 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		//Find the plugins install location
 		let myExtDirabs = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
+		if (myExtDirabs === undefined){
+			let message = "Could not find extension path!";
+			vscode.window.showErrorMessage(message);
+		}
 		let myExtDir = path.parse(myExtDirabs);
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		//Run the Wrapper Script with the build command
@@ -183,61 +190,65 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.window.showErrorMessage(message);
 		}
 		let content = defaultLine;
-		
-		//Find the install location of the plugin
-		let myExtDirabs = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
-		let myExtDir = path.parse(myExtDirabs);
-		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
-		console.log(myExtDir);
-		//When the Interpreter is found, run the Pytask Wrapper Script to collect the tasks
+
+		//When the Interpreter is found, start pytask in debug mode
 		interpreter.then((value: string) => {
 			
-			const pytask = child.spawn(value, ['-Xutf8','-m','pytask', '--pdb'], { cwd : workingdirectory});
-			pytask.stdout.on('data', (data) => {
-				writeEmitter.fire(formatText(`${data}`));
-			});
-			pytask.stderr.on('data', (data) => {
-				writeEmitter.fire(data);
-			});
-			
-			const pty = {
-				onDidWrite: writeEmitter.event,
-				open: () => {},
-				close: () => {},
-				handleInput: async (char: string) => {
-				switch (char) {
-					case keys.enter:
-						// preserve the run command line for history
-						writeEmitter.fire(`\r\n`);
-						// trim off leading default prompt
-						const command = content.slice(defaultLine.length);
-						try {
-							pytask.stdin.write(`${command}\r\n`);
-						} catch (error) {
-							writeEmitter.fire(`error`);
-						}
-						content = defaultLine;
-					case keys.backspace:
-						if (content.length <= defaultLine.length) {
+			try {
+				const pytask = child.spawn(value, ['-Xutf8','-m','pytask', '--pdb'], { cwd : workingdirectory});
+				//Catch pytask output and errors
+				pytask.stdout.on('data', (data) => {
+					writeEmitter.fire(formatText(`${data}`));
+				});
+				pytask.stderr.on('data', (data) => {
+					vscode.window.showErrorMessage(data);
+				});
+				// Define the pseudoterminal used to communicate witch pytask
+				const pty = {
+					onDidWrite: writeEmitter.event,
+					open: () => {},
+					close: () => {},
+					handleInput: async (char: string) => {
+					switch (char) {
+						case keys.enter:
+							writeEmitter.fire(`\r\n`);
+							// trim off leading default prompt
+							const command = content.slice(defaultLine.length);
+							// Send the user input to pytask
+							try {
+								pytask.stdin.write(`${command}\r\n`);
+							} catch (error) {
+								vscode.window.showErrorMessage("Error: Could not send command to pytask.");
+							}
+							content = defaultLine;
+						case keys.backspace:
+							if (content.length <= defaultLine.length) {
+								return;
+							}
+							// remove last character
+							content = content.substr(0, content.length - 1);
+							writeEmitter.fire(actions.cursorBack);
+							writeEmitter.fire(actions.deleteChar);
 							return;
-						}
-						// remove last character
-						content = content.substr(0, content.length - 1);
-						writeEmitter.fire(actions.cursorBack);
-						writeEmitter.fire(actions.deleteChar);
-						return;
-					default:
-						// typing a new character
-						content += char;
-						writeEmitter.fire(char);
-				}
-				},
-			};
-			const terminal = (<any>vscode.window).createTerminal({
-				name: `Pytask Terminal`,
-				pty,
-			  });
-			terminal.show();
+						default:
+							// typing a new character
+							content += char;
+							writeEmitter.fire(char);
+					}
+					},
+				};
+				// Create the terminal instance
+				const terminal = (<any>vscode.window).createTerminal({
+					name: `Pytask Terminal`,
+					pty,
+				});
+				terminal.show();
+			} catch (error) {
+				vscode.window.showErrorMessage("NodeError: Could not spawn Pytask");
+			}
+			
+
+			
 		});
 	}
 	
