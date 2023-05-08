@@ -1,12 +1,10 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as utils from './utils';
 import * as child from 'child_process';
 import * as path from 'path';
 
 
-// Settings
+// Settings for the pseudoterminal
 const defaultLine = "(Pdb++)";
 const keys = {
   enter: "\r",
@@ -18,12 +16,11 @@ const actions = {
   clear: "\x1b[2J\x1b[3J\x1b[;H",
 };
 
-// cleanup inconsitent line breaks
+// Cleanup inconsitent line breaks
 const formatText = (text: string) => `${text.replace(/[\r\n]+/g,"\r\n")}`;
 
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+// This method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
@@ -54,7 +51,7 @@ export function activate(context: vscode.ExtensionContext) {
 	controller.refreshHandler = async test => {
 		collctTasks();
 	};
-	//Is used when a test is run
+	//Is used when the user starts a pytask run
 	function runHandler(
 		shouldDebug: boolean,
 		request: vscode.TestRunRequest,
@@ -70,22 +67,22 @@ export function activate(context: vscode.ExtensionContext) {
 			debugTasks();
 		}
 	}
-	// The Run Profile will be used when you want to run a test in VSCode
+	// The Run Profile for Running all Tasks
 	const runProfile = controller.createRunProfile(
-		'Run',
+		'Run Pytask',
 		vscode.TestRunProfileKind.Run,
 		(request, token) => {
 		  runHandler(false, request, token);
 		}
 	);
-
+	//The Debug Profile for starting pytask in debug mode
 	const debugProfile = controller.createRunProfile(
-		'Debug',
+		'Debug Tasks',
 		vscode.TestRunProfileKind.Debug,
 		(request, token) => {
 		  runHandler(true, request, token);
 		}
-	  );
+	);
 
 	// Collects all the Tasks to display them in the Test View
 	async function collctTasks() {
@@ -105,6 +102,10 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		//Find the install location of the plugin
 		let myExtDirabs = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
+		if (myExtDirabs === undefined){
+			let message = "Could not find extension path!";
+			vscode.window.showErrorMessage(message);
+		}
 		let myExtDir = path.parse(myExtDirabs);
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		console.log(myExtDir);
@@ -130,8 +131,7 @@ export function activate(context: vscode.ExtensionContext) {
 		});
 	}
 	//Run all Tasks
-	function runPytask(run : vscode.TestRun) {
-		console.log("Running");
+	async function runPytask(run : vscode.TestRun) {
 		//Find the python interpreter
 		let interpreter = utils.getInterpreter();
 		let workingdirectory = "";
@@ -148,6 +148,10 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		//Find the plugins install location
 		let myExtDirabs = vscode.extensions.getExtension("pytask.pytask")!.extensionPath;
+		if (myExtDirabs === undefined){
+			let message = "Could not find extension path!";
+			vscode.window.showErrorMessage(message);
+		}
 		let myExtDir = path.parse(myExtDirabs);
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		//Run the Wrapper Script with the build command
@@ -195,6 +199,8 @@ export function activate(context: vscode.ExtensionContext) {
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		console.log(myExtDir);
 		//When the Interpreter is found, run Pytask wit --pdb to start the debugger
+
+		//When the Interpreter is found, start pytask in debug mode
 		interpreter.then((value: string) => {
 			
 			//Spwan Pytask debugger
@@ -284,6 +290,62 @@ export function activate(context: vscode.ExtensionContext) {
 		const pytask = child.execFile(value, ['-Xutf8','-m','pytask', 'dag'], { cwd : workingdirectory});
 		
 		});	
+			try {
+				const pytask = child.spawn(value, ['-Xutf8','-m','pytask', '--pdb'], { cwd : workingdirectory});
+				//Catch pytask output and errors
+				pytask.stdout.on('data', (data) => {
+					writeEmitter.fire(formatText(`${data}`));
+				});
+				pytask.stderr.on('data', (data) => {
+					vscode.window.showErrorMessage(data);
+				});
+				// Define the pseudoterminal used to communicate witch pytask, only very limited functionality
+				const pty = {
+					onDidWrite: writeEmitter.event,
+					open: () => {},
+					close: () => {},
+					handleInput: async (char: string) => {
+					switch (char) {
+						case keys.enter:
+							writeEmitter.fire(`\r\n`);
+							// trim off leading default prompt
+							const command = content.slice(defaultLine.length);
+							// Send the user input to pytask
+							try {
+								pytask.stdin.write(`${command}\r\n`);
+							} catch (error) {
+								vscode.window.showErrorMessage("Error: Could not send command to pytask.");
+							}
+							content = defaultLine;
+						case keys.backspace:
+							if (content.length <= defaultLine.length) {
+								return;
+							}
+							// remove last character
+							content = content.substr(0, content.length - 1);
+							writeEmitter.fire(actions.cursorBack);
+							writeEmitter.fire(actions.deleteChar);
+							return;
+						default:
+							// typing a new character
+							content += char;
+							writeEmitter.fire(char);
+					}
+					},
+				};
+				// Create the terminal instance
+				const terminal = (<any>vscode.window).createTerminal({
+					name: `Pytask Terminal`,
+					pty,
+				});
+				terminal.show();
+			} catch (error) {
+				vscode.window.showErrorMessage("NodeError: Could not spawn Pytask");
+			}
+			
+
+			
+		});
 	}
 	
 
