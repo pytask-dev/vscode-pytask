@@ -15,7 +15,22 @@
     "onStartupFinished"
   ],
   "main": "./dist/extension.js",
-  "contributes": {},
+  "contributes": {
+    "commands": [
+      {
+        "command": "pytask.createDAG",
+        "title": "Create DAG"
+      }
+    ],
+    "menus": {
+      "testing/title": [
+        {
+          "command": "pytask.createDAG",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
   "extensionDependencies": [
     "ms-python.python"
   ],

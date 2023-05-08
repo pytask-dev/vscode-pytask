@@ -29,6 +29,12 @@ export function activate(context: vscode.ExtensionContext) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "pytask" is now active!');
+
+	let disposable = vscode.commands.registerCommand('pytask.createDAG', () => {
+		
+		createDag();
+	});
+	
 	const writeEmitter = new vscode.EventEmitter<string>();
 	const controller = vscode.tests.createTestController(
 		'pytask',
@@ -188,17 +194,19 @@ export function activate(context: vscode.ExtensionContext) {
 		let myExtDir = path.parse(myExtDirabs);
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		console.log(myExtDir);
-		//When the Interpreter is found, run the Pytask Wrapper Script to collect the tasks
+		//When the Interpreter is found, run Pytask wit --pdb to start the debugger
 		interpreter.then((value: string) => {
 			
+			//Spwan Pytask debugger
 			const pytask = child.spawn(value, ['-Xutf8','-m','pytask', '--pdb'], { cwd : workingdirectory});
+			//Catch stdout and send it to the writeEmitter of the Pseudoterminal
 			pytask.stdout.on('data', (data) => {
 				writeEmitter.fire(formatText(`${data}`));
 			});
 			pytask.stderr.on('data', (data) => {
 				writeEmitter.fire(data);
 			});
-			
+			//Define the Pseudoterminal
 			const pty = {
 				onDidWrite: writeEmitter.event,
 				open: () => {},
@@ -232,7 +240,9 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 				},
 			};
+			//Check if the Terminal is already open
 			const term = utils.checkOpenTerminal(vscode.window.terminals);
+			// If open => close and reopen
 			if (term !== undefined){
 				term.dispose();
 				const terminal = vscode.window.createTerminal({
@@ -240,6 +250,7 @@ export function activate(context: vscode.ExtensionContext) {
 					pty,
 					});
 				terminal.show();
+			// If not open => create the Terminal
 			} else {
 				const terminal = vscode.window.createTerminal({
 				name: `Pytask Terminal`,
@@ -250,6 +261,29 @@ export function activate(context: vscode.ExtensionContext) {
 			
 			
 		});
+	}
+	async function createDag() {
+		//Selecting the python interpreter
+		let interpreter = utils.getInterpreter();
+		let workingdirectory = "";
+		//Find the folder that is currently opened
+		if(vscode.workspace.workspaceFolders !== undefined) {
+			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
+			console.log(workingdirectory);
+
+		} 
+		else {
+			let message = "Working folder not found, open a folder and try again" ;
+		
+			vscode.window.showErrorMessage(message);
+		}
+		let content = defaultLine;
+		//When the Interpreter is found, run Pytask dag
+		interpreter.then((value: string) => {
+			
+		const pytask = child.execFile(value, ['-Xutf8','-m','pytask', 'dag'], { cwd : workingdirectory});
+		
+		});	
 	}
 	
 
