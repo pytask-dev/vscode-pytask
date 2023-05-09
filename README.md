@@ -1,5 +1,7 @@
 # Pytask VS Code Extension
-This extension is still under development. Currently it only creates a Pytask Tab where you can run pytask collect through a button. The Pytask CLI Report will be shown under Output in the Pytask Channel and a list of collected tasks appears in the Pytask Tab.
+This extension is still under development. 
+
+The Extension integrates Pytask into the VS Code Test Explorer. It will discover all tasks inside the current working folder and you will be able to run them all at once by clicking "Run Pytask" inside the Test Explorer UI. The pytask output from your run will appear inside the Pytask Output Channel. You can also use pytasks debug functionality by clicking on "Debug Tasks". This will make pytask stop and start debugging on the first error it encounters. Then a mock console will appear through which you can interact with the debugger.
 
 ## Installation
 1. Download the .vsix File
