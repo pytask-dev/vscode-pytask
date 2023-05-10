@@ -198,7 +198,8 @@ export function activate(context: vscode.ExtensionContext) {
 		let myExtDir = path.parse(myExtDirabs);
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		console.log(myExtDir);
-		//When the Interpreter is found, run Pytask wit --pdb to start the debugger
+		
+		await vscode.workspace.getConfiguration().update('python.terminal.activateEnvironment', false, vscode.ConfigurationTarget.Global);
 
 		//When the Interpreter is found, start pytask in debug mode
 		interpreter.then((value: string) => {
@@ -251,21 +252,12 @@ export function activate(context: vscode.ExtensionContext) {
 			// If open => close and reopen
 			if (term !== undefined){
 				term.dispose();
-				const terminal = vscode.window.createTerminal({
-					name: `Pytask Terminal`,
-					pty,
-					});
-				terminal.show();
-			// If not open => create the Terminal
-			} else {
-				const terminal = vscode.window.createTerminal({
-				name: `Pytask Terminal`,
-				pty,
-				});
-				terminal.show();
 			}
-			
-			
+			const terminal = vscode.window.createTerminal({
+			name: `Pytask Terminal`,
+			pty,
+			});
+			terminal.show();
 		});
 	}
 	async function createDag() {
