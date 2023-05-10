@@ -201,7 +201,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 		if (pythonextensionsetting === true){
 			await vscode.workspace.getConfiguration().update('python.terminal.activateEnvironment', false, vscode.ConfigurationTarget.Global);
-			vscode.window.showInformationMessage('Changed Python Extension Settings');
 		}
 		
 
