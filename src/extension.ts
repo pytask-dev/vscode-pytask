@@ -199,7 +199,11 @@ export function activate(context: vscode.ExtensionContext) {
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		console.log(myExtDir);
 		
-		await vscode.workspace.getConfiguration().update('python.terminal.activateEnvironment', false, vscode.ConfigurationTarget.Global);
+		if (await vscode.workspace.getConfiguration().get('python.terminal.activateEnvironment') === true){
+			await vscode.workspace.getConfiguration().update('python.terminal.activateEnvironment', false, vscode.ConfigurationTarget.Global);
+			vscode.window.showInformationMessage('Changed Python Extension Settings');
+		}
+		
 
 		//When the Interpreter is found, start pytask in debug mode
 		interpreter.then((value: string) => {
