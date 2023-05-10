@@ -100,7 +100,7 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.window.showErrorMessage(message);
 		}
 		//Find the install location of the plugin
-		let myExtDirabs = vscode.extensions.getExtension("mj023.pytask-extension")!.extensionPath;
+		let myExtDirabs = vscode.extensions.getExtension("mj023.pytask")!.extensionPath;
 		if (myExtDirabs === undefined){
 			let message = "Could not find extension path!";
 			vscode.window.showErrorMessage(message);
@@ -146,7 +146,7 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.window.showErrorMessage(message);
 		}
 		//Find the plugins install location
-		let myExtDirabs = vscode.extensions.getExtension("mj023.pytask-extension")!.extensionPath;
+		let myExtDirabs = vscode.extensions.getExtension("mj023.pytask")!.extensionPath;
 		if (myExtDirabs === undefined){
 			let message = "Could not find extension path!";
 			vscode.window.showErrorMessage(message);
@@ -193,7 +193,7 @@ export function activate(context: vscode.ExtensionContext) {
 		let content = defaultLine;
 		
 		//Find the install location of the plugin
-		let myExtDirabs = vscode.extensions.getExtension("mj023.pytask-extension")!.extensionPath;
+		let myExtDirabs = vscode.extensions.getExtension("mj023.pytask")!.extensionPath;
 		let myExtDir = path.parse(myExtDirabs);
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		console.log(myExtDir);

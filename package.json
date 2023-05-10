@@ -1,5 +1,5 @@
 {
-  "name": "pytask-extension",
+  "name": "pytask",
   "publisher": "mj023",
   "displayName": "VSCode Pytask Extension",
   "repository": "https://github.com/mj023/pytask_vscode",
