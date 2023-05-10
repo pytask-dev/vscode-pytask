@@ -26,7 +26,6 @@ export function activate(context: vscode.ExtensionContext) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "pytask" is now active!');
-
 	let disposable = vscode.commands.registerCommand('pytask.createDAG', () => {
 		
 		createDag();
@@ -198,8 +197,9 @@ export function activate(context: vscode.ExtensionContext) {
 		let myExtDir = path.parse(myExtDirabs);
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		console.log(myExtDir);
-		
-		if (await vscode.workspace.getConfiguration().get('python.terminal.activateEnvironment') === true){
+		let pythonextensionsetting = await vscode.workspace.getConfiguration().get('python.terminal.activateEnvironment');
+
+		if (pythonextensionsetting === true){
 			await vscode.workspace.getConfiguration().update('python.terminal.activateEnvironment', false, vscode.ConfigurationTarget.Global);
 			vscode.window.showInformationMessage('Changed Python Extension Settings');
 		}
@@ -262,7 +262,9 @@ export function activate(context: vscode.ExtensionContext) {
 			pty,
 			});
 			terminal.show();
+			
 		});
+		await vscode.workspace.getConfiguration().update('python.terminal.activateEnvironment',pythonextensionsetting , vscode.ConfigurationTarget.Global);
 	}
 	async function createDag() {
 	}
@@ -272,5 +274,4 @@ export function activate(context: vscode.ExtensionContext) {
 
 // This method is called when your extension is deactivated
 export function deactivate() {
-	
 }
