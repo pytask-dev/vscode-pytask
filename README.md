@@ -9,7 +9,6 @@ The Extension integrates Pytask into the VS Code Test Explorer. It will discover
 3. Open the Extensions Tab
 4. Click on "Views and More Actions..." (the three dots in the upper right corner)
 5. Click "Install from VSIX"
-6. Using the debugger will change 'python.terminal.activateEnvironment' setting from the python extension
 
 ## Running the Extension
 Requires VS Code Python Extension and a python environment that can run pytask.
