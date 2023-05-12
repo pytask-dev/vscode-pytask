@@ -19,6 +19,7 @@ const actions = {
 // Cleanup inconsitent line breaks
 const formatText = (text: string) => `${text.replace(/[\r\n]+/g,"\r\n")}`;
 
+const pytaskTag = new vscode.TestTag('Pytask');
 
 // This method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
@@ -74,6 +75,7 @@ export function activate(context: vscode.ExtensionContext) {
 		  runHandler(false, request, token);
 		}
 	);
+	runProfile.tag = pytaskTag;
 	//The Debug Profile for starting pytask in debug mode
 	const debugProfile = controller.createRunProfile(
 		'Debug Tasks',
@@ -123,6 +125,8 @@ export function activate(context: vscode.ExtensionContext) {
 				for (const task of result.tasks) {
 					let uri = vscode.Uri.file(task.path);
 					let testitem = controller.createTestItem(task.name,task.name,uri);
+					testitem.tags = [...testitem.tags, pytaskTag];
+					console.log(testitem.tags);
 					collection.push(testitem);
 				}
 				controller.items.replace(collection);
@@ -142,16 +146,16 @@ export function activate(context: vscode.ExtensionContext) {
 		} 
 		else {
 			let message = "Working folder not found, open a folder and try again" ;
-		
 			vscode.window.showErrorMessage(message);
+			return;
 		}
 		//Find the plugins install location
 		let myExtDirabs = vscode.extensions.getExtension("mj023.pytask")!.extensionPath;
 		if (myExtDirabs === undefined){
 			let message = "Could not find extension path!";
 			vscode.window.showErrorMessage(message);
+			return;
 		}
-		let myExtDir = path.parse(myExtDirabs);
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		//Run the Wrapper Script with the build command
 		interpreter.then((value: string) => {
@@ -162,15 +166,23 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 				let result = JSON.parse(stdout);
 				//Send Pytasks CLI Output to the VSCode Output channel
+				run.appendOutput(formatText(result.message));
 				channel.append(result.message);
 				//Parse the Run results from pytask and send them to the Test API
 				for (const task of result.tasks) {
 					if (task.report !== 'TaskOutcome.FAIL' && task.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
 						run.passed(controller.items.get(task.name)!);
-					} else {
-						run.failed(controller.items.get(task.name)!, new vscode.TestMessage('failed'));
+					} else if (task.report !== 'TaskOutcome.FAIL') {
+						run.failed(controller.items.get(task.name)!, new vscode.TestMessage('Failed!'));
+					} else if (task.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+						run.failed(controller.items.get(task.name)!, new vscode.TestMessage('Skipped bedcause previous failed!'));
 					}
 				}
+				run.end();
+			});
+			run.token.onCancellationRequested(() => {
+				np.kill();
+				run.appendOutput('Run cancelled.');
 				run.end();
 			});
 		});
