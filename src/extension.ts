@@ -57,6 +57,9 @@ export function activate(context: vscode.ExtensionContext) {
 		request: vscode.TestRunRequest,
 		token: vscode.CancellationToken
 	  ) {
+		if (request.include !== undefined){
+			return;
+		}
 		if (shouldDebug === false){
 			const run = controller.createTestRun(request,'Pytask',false);
 			runPytask(run);
