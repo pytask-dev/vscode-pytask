@@ -11,7 +11,7 @@ def toDict(session: pytask.Session, message: str):
         for i in session.execution_reports:
             if i.task == task:
                 report = str(i.outcome)
-        attrs = {"name" : task.base_name, "path" : str(task.path), "report" : report}
+        attrs = {"name" : task.short_name, "path" : str(task.path), "report" : report}
         list.append(attrs)
     result = {"message" : message, "tasks" : list}
     return result
@@ -20,7 +20,7 @@ f = io.StringIO()
 # Intercepts the Pytask CLI Output
 with contextlib.redirect_stdout(f):
     if sys.argv[1] == "dry":
-        session = pytask.main({"dry_run":True,"check_casing_of_paths" : "false", "editor_url_scheme":"vscode"})
+            session = pytask.main({"dry_run":True,"check_casing_of_paths" : "false", "editor_url_scheme":"vscode"})
     else:
         session = pytask.main({"dry_run":False,"check_casing_of_paths" : "false", "editor_url_scheme":"vscode"})
 message = f.getvalue()

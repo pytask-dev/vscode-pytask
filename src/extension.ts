@@ -44,7 +44,7 @@ export function activate(context: vscode.ExtensionContext) {
 		collctTasks();
 		vscode.commands.executeCommand('testing.clearTestResults');
 		const watcher = vscode.workspace.createFileSystemWatcher('**/*.py');
-		watcher.onDidChange(uri => {collctTasks();}); // listen to files being changed
+		watcher.onDidChange(uri => {if (uri.path.includes('task')){collctTasks();}}); // listen to files being changed
 		watcher.onDidCreate(uri => {collctTasks();}); // listen to files/folders being created
 		watcher.onDidDelete(uri => {collctTasks();}); // listen to files/folders getting deleted
 	};
@@ -63,8 +63,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (shouldDebug === false){
 			const run = controller.createTestRun(request,'Pytask',false);
 			runPytask(run);
-		}
-		if (shouldDebug === true){
+		} else {
 			const run = controller.createTestRun(request,'Pytask',false);
 			runPytask(run);
 			debugTasks();
