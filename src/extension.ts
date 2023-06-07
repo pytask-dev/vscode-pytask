@@ -123,15 +123,23 @@ export function activate(context: vscode.ExtensionContext) {
 				//Parse the JSON that is printed to stdout by the wrapper script and add every task as a test item
 				let result = JSON.parse(stdout);
 				console.log(result);
-				let collection = [];
-				for (const task of result.tasks) {
-					let uri = vscode.Uri.file(task.path);
-					let testitem = controller.createTestItem(task.name,task.name,uri);
-					testitem.tags = [...testitem.tags, pytaskTag];
-					console.log(testitem.tags);
-					collection.push(testitem);
+				if (result.exitcode === 0) {
+					let collection = [];
+					for (const task of result.tasks) {
+						let uri = vscode.Uri.file(task.path);
+						let testitem = controller.createTestItem(task.name,task.name,uri);
+						testitem.tags = [...testitem.tags, pytaskTag];
+						console.log(testitem.tags);
+						collection.push(testitem);
+					}
+					controller.items.replace(collection);
+				}else {
+					vscode.window.showErrorMessage("Pytask Failed during Collection: Look at the Output Channel for further Information.");
+					channel.appendLine(result.message);
 				}
-				controller.items.replace(collection);
+				
+				
+				
 			});
 		});
 	}

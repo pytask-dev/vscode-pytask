@@ -7,13 +7,16 @@ import contextlib
 # Converts the important parts from the pytask session into a dict, to then convert them into JSON
 def toDict(session: pytask.Session, message: str):
     list = []
-    for task in session.tasks:
-        for i in session.execution_reports:
-            if i.task == task:
-                report = str(i.outcome)
-        attrs = {"name" : task.short_name, "path" : str(task.path), "report" : report}
-        list.append(attrs)
-    result = {"message" : message, "tasks" : list}
+    if session.exit_code == 0:
+        for task in session.tasks:
+            for i in session.execution_reports:
+                if i.task == task:
+                    report = str(i.outcome)
+            attrs = {"name" : task.short_name, "path" : str(task.path), "report" : report}
+            list.append(attrs)
+        result = {"message" : message, "tasks" : list, "exitcode" : 0}
+    else:
+        result = {"message" : message, "exitcode" : 1}
     return result
 
 f = io.StringIO()
