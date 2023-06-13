@@ -7,7 +7,7 @@ import contextlib
 # Converts the important parts from the pytask session into a dict, to then convert them into JSON
 def toDict(session: pytask.Session, message: str):
     list = []
-    if session.exit_code == 0:
+    if session.exit_code == 0 or session.exit_code == 1:
         for task in session.tasks:
             for i in session.execution_reports:
                 if i.task == task:
