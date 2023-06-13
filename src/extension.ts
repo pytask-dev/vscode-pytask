@@ -179,17 +179,23 @@ export function activate(context: vscode.ExtensionContext) {
 				run.appendOutput(formatText(result.message));
 				channel.append(result.message);
 				console.log(result.tasks);
-				//Parse the Run results from pytask and send them to the Test API
-				for (const task of result.tasks) {
-					if (task.report !== 'TaskOutcome.FAIL' && task.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-						run.passed(controller.items.get(task.name)!);
-					} else if (task.report === 'TaskOutcome.FAIL') {
-						run.failed(controller.items.get(task.name)!, new vscode.TestMessage('Failed!'));
-					} else if (task.report === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-						run.failed(controller.items.get(task.name)!, new vscode.TestMessage('Skipped bedcause previous failed!'));
+				try {
+					for (const task of result.tasks) {
+						if (task.report !== 'TaskOutcome.FAIL' && task.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+							run.passed(controller.items.get(task.name)!);
+						} else if (task.report === 'TaskOutcome.FAIL') {
+							run.failed(controller.items.get(task.name)!, new vscode.TestMessage('Failed!'));
+						} else if (task.report === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+							run.failed(controller.items.get(task.name)!, new vscode.TestMessage('Skipped bedcause previous failed!'));
+						}
 					}
+					run.end();
+				} catch (error) {
+					vscode.window.showErrorMessage('Script sent empty Report!');
+					run.end();
 				}
-				run.end();
+				//Parse the Run results from pytask and send them to the Test API
+				
 			});
 			run.token.onCancellationRequested(() => {
 				np.kill();
