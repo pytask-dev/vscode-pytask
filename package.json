@@ -16,6 +16,17 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Pytask",
+      "properties": {
+        "pytask.enableCommandLineOptions": {
+          "type": "string",
+          "default": "none",
+          "enum": ["none", "textprompt", "list"],
+          "description": "Select how to input Pytasks Command Line Options."
+        }
+      }
+    },
     "commands": [
       {
         "command": "pytask.createDAG",

@@ -1,7 +1,10 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import * as vscode from 'vscode';
 import * as utils from './utils';
 import * as child from 'child_process';
 import * as path from 'path';
+
+const util = require('node:util');
 
 
 // Settings for the pseudoterminal
@@ -15,6 +18,94 @@ const actions = {
   deleteChar: "\x1b[P",
   clear: "\x1b[2J\x1b[3J\x1b[;H",
 };
+
+
+var pytask_options : {[option : string] : any} = {
+			'config':{
+				type : 'string',
+				short : 'c'
+			},
+			'capture':{
+				type : 'string'
+			},
+			'database-create-db': {
+				type : 'boolean'
+			},
+			'database-create-tables' : {
+				type : 'boolean'
+			},
+			'database-filename' : {
+				type : 'boolean'
+			},
+			'database-provider' : {
+				type : 'string'
+			},
+			'debug-pytask' : {
+				type : 'boolean'
+			},
+			'disable-warnings' : {
+				type : 'boolean'
+			},
+			'dry-run' : {
+				type : 'boolean'
+			},
+			'editor-url-scheme' : {
+				type : 'string'
+			},
+			'force' : {
+				type : 'boolean',
+				short : 'f'
+			},
+			'ignore' : {
+				type : 'boolean'
+			},
+			'expression' : {
+				type : 'string',
+				short : 'k'
+			},
+			'marker' : {
+				type : 'string',
+				short : 'm'
+			},
+			'max-failures' : {
+				type : 'string'
+			},
+			'n-entries-in-table' : {
+				type : 'string'
+			},
+			'pdb' : {
+				type : 'boolean'
+			},
+			'show-capture' : {
+				type : 'boolean'
+			},
+			'show-errors-immediately' : {
+				type : 'boolean'
+			},
+			'show-locals' : {
+				type : 'boolean'
+			},
+			'show-traceback' : {
+				type : 'boolean'
+			},
+			'sort-table' : {
+				type : 'boolean'
+			},
+			'strict-markers' : {
+				type : 'boolean'
+			},
+			'trace' : {
+				type : 'boolean'
+			},
+			'verbose' : {
+				type : 'boolean',
+				short : 'v'
+			},
+			'stop-after-first-failure' : {
+				type : 'boolean',
+				short : 'x'
+			},
+			};
 
 // Cleanup inconsitent line breaks
 const formatText = (text: string) => `${text.replace(/[\r\n]+/g,"\r\n")}`;
@@ -146,8 +237,14 @@ export function activate(context: vscode.ExtensionContext) {
 	//Run all Tasks
 	async function runPytask(run : vscode.TestRun) {
 		//Find the python interpreter
-		let interpreter = utils.getInterpreter();
+		let interpreter =  await utils.getInterpreter();
 		let workingdirectory = "";
+		let np = new child.ChildProcess;
+		run.token.onCancellationRequested(() => {
+			np.kill();
+			run.appendOutput('Run cancelled.');
+			run.end();
+		});
 		//Find the current working directory
 		if(vscode.workspace.workspaceFolders !== undefined) {
 			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
@@ -168,8 +265,55 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
 		//Run the Wrapper Script with the build command
-		interpreter.then((value: string) => {
-			const np = child.execFile(value, ['-Xutf8', path.resolve(myExtDirabs), 'build'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+		if (vscode.workspace.getConfiguration().get('pytask.enableCommandLineOptions') === 'textprompt' || vscode.workspace.getConfiguration().get('pytask.enableCommandLineOptions') === 'list'){
+			
+			var options:  any = {};
+
+			if (vscode.workspace.getConfiguration().get('pytask.enableCommandLineOptions') === 'textprompt'){
+				let commandLineArgs = vscode.window.showInputBox({
+					placeHolder: "Command Line Arguments",
+					prompt: "Provide the pytask options you want to use!"
+				});
+				commandLineArgs.then((args : string | undefined) => {
+					if ( args !== undefined){
+						let input = args.split(" ");
+						if (input[0] !== ""){
+							options = util.parseArgs({options : pytask_options, args: input}).values;
+						};
+					};
+				});
+			};
+			if (vscode.workspace.getConfiguration().get('pytask.enableCommandLineOptions') === 'list'){
+				let end = true;
+				let list = Object.keys(pytask_options);
+				list.push("End Selection");
+				while (end){
+					let selection = await vscode.window.showQuickPick(list);
+					if (selection !== undefined && selection in pytask_options){
+						if (pytask_options[selection].type === 'string'){
+							let value =  await vscode.window.showInputBox({
+								placeHolder: "Value",
+								prompt: "Provide a value for" + selection
+							});
+							if (value !== undefined && /^-?\d+$/.test(value)){
+								options[selection] = +value;
+							} else{
+								options[selection] = value;
+							};
+							
+						} else {
+							options[selection] = true;
+						};
+						
+					} else if (selection !== undefined) {
+						end = false;
+					};					
+				};
+				console.log(options);
+				
+			};
+			
+			np = child.execFile(interpreter, ['-Xutf8', path.resolve(myExtDirabs), 'build_options',JSON.stringify(options)], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
 				console.log(stderr);
 				if (stderr.length >= 2) {
 					vscode.window.showErrorMessage(stderr);
@@ -179,6 +323,7 @@ export function activate(context: vscode.ExtensionContext) {
 				run.appendOutput(formatText(result.message));
 				channel.append(result.message);
 				console.log(result.tasks);
+				//Parse the Run results from pytask and send them to the Test API
 				try {
 					for (const task of result.tasks) {
 						if (task.report !== 'TaskOutcome.FAIL' && task.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
@@ -194,15 +339,41 @@ export function activate(context: vscode.ExtensionContext) {
 					vscode.window.showErrorMessage('Script sent empty Report!');
 					run.end();
 				}
-				//Parse the Run results from pytask and send them to the Test API
+				
 				
 			});
-			run.token.onCancellationRequested(() => {
-				np.kill();
-				run.appendOutput('Run cancelled.');
-				run.end();
+
+		} else{
+			np = child.execFile(interpreter, ['-Xutf8', path.resolve(myExtDirabs), 'build'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+				console.log(stderr);
+				if (stderr.length >= 2) {
+					vscode.window.showErrorMessage(stderr);
+				}
+				let result = JSON.parse(stdout);
+				//Send Pytasks CLI Output to the VSCode Output channel
+				run.appendOutput(formatText(result.message));
+				channel.append(result.message);
+				console.log(result.tasks);
+				//Parse the Run results from pytask and send them to the Test API
+				try {
+					for (const task of result.tasks) {
+						if (task.report !== 'TaskOutcome.FAIL' && task.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+							run.passed(controller.items.get(task.name)!);
+						} else if (task.report === 'TaskOutcome.FAIL') {
+							run.failed(controller.items.get(task.name)!, new vscode.TestMessage('Failed!'));
+						} else if (task.report === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+							run.failed(controller.items.get(task.name)!, new vscode.TestMessage('Skipped bedcause previous failed!'));
+						}
+					}
+					run.end();
+				} catch (error) {
+					vscode.window.showErrorMessage('Script sent empty Report!');
+					run.end();
+				}
+			
+				
 			});
-		});
+		};
 	}
 	async function debugTasks() {
 		//Selecting the python interpreter
