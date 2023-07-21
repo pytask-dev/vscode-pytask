@@ -3,6 +3,8 @@ import sys
 import json
 import io
 import contextlib
+import multiprocessing
+from multiprocessing.connection import Listener
 
 # Converts the important parts from the pytask session into a dict, to then convert them into JSON
 def toDict(session: pytask.Session, message: str):
@@ -16,20 +18,49 @@ def toDict(session: pytask.Session, message: str):
         result = {"message" : message, "exitcode" : 1}
     return result
 
-f = io.StringIO()
-# Intercepts the Pytask CLI Output
-with contextlib.redirect_stdout(f):
-    if sys.argv[1] == "dry":
-        session = pytask.main({"dry_run":True,"check_casing_of_paths" : "false", "editor_url_scheme":"vscode"})
-    elif sys.argv[1] == "build":
-        session = pytask.main({"dry_run":False,"check_casing_of_paths" : "false", "editor_url_scheme":"vscode"})
-    elif sys.argv[1] == "build_options":
-        input = json.loads(sys.argv[2])
-        options = {}
-        for key in input:
-            options[key.replace('-','_')] = input[key]
-        session = pytask.main(options)
-        
-message = f.getvalue()
+def startServer():
+    address = ('localhost', 6000)     # family is deduced to be 'AF_INET'
+    listener = Listener(address, authkey=b'secret password')
+    while True:
+        try:
+            conn = listener.accept()
+            msg = conn.recv()
+        except Exception as e:
+            print(e)
+            conn.close()
+            break
+        print(msg, end='', flush=True)
+        if msg == 'close':
+            conn.close()
+            break
+    listener.close()
+
+def startPytask(args):
+
+    f = io.StringIO()
+    # Intercepts the Pytask CLI Output
+    with contextlib.redirect_stdout(f):
+        if args[1] == "dry":
+            session = pytask.main({"dry_run":True,"check_casing_of_paths" : "false", "editor_url_scheme":"vscode"})
+        elif args[1] == "build":
+            session = pytask.main({"dry_run":False,"check_casing_of_paths" : "false", "editor_url_scheme":"vscode"})
+        elif args[1] == "build_options":
+            input = json.loads(args[2])
+            options = {}
+            for key in input:
+                options[key.replace('-','_')] = input[key]
+            session = pytask.main(options)
+            
+    message = f.getvalue()
+    return json.dumps(toDict(session,message))
+if __name__ == "__main__":
+    if sys.argv[1] == "build" or sys.argv[1] == "build_options":
+        run = multiprocessing.Process(target=startPytask, args=(sys.argv,))
+        server = multiprocessing.Process(target=startServer)
+        server.start()
+        run.start()
+        run.join()
+        server.join()
+    else:
+        print(startPytask(sys.argv))
 # Print the JSON to stdout to communicate with the plugin
-print(json.dumps(toDict(session,message)))

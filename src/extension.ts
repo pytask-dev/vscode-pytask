@@ -153,6 +153,9 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		if (shouldDebug === false){
 			const run = controller.createTestRun(request,'Pytask',false);
+			controller.items.forEach(test => {
+				test.busy = true;
+			});
 			runPytask(run);
 		} else {
 			const run = controller.createTestRun(request,'Pytask',false);
@@ -340,35 +343,38 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 
 		} else{
-			np = child.execFile(interpreter, ['-Xutf8', path.resolve(myExtDirabs), 'build'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
-				console.log(stderr);
-				if (stderr.length >= 2) {
-					vscode.window.showErrorMessage(stderr);
-				}
-				let result = JSON.parse(stdout);
-				//Send Pytasks CLI Output to the VSCode Output channel
-				run.appendOutput(formatText(result.message));
-				channel.append(result.message);
-				console.log(result.tasks);
-				//Parse the Run results from pytask and send them to the Test API
-				try {
-					for (const task of result.tasks) {
-						if (task.report !== 'TaskOutcome.FAIL' && task.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-							run.passed(controller.items.get(task.name)!);
-						} else if (task.report === 'TaskOutcome.FAIL') {
-							run.failed(controller.items.get(task.name)!, new vscode.TestMessage('Failed!'));
-						} else if (task.report === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-							run.failed(controller.items.get(task.name)!, new vscode.TestMessage('Skipped bedcause previous failed!'));
-						}
+			const np = child.spawn(interpreter, ['-Xutf8', path.resolve(myExtDirabs), 'build'], { cwd : workingdirectory});
+			np.stdout.setEncoding('utf-8');
+			np.stderr.setEncoding('utf-8');
+			np.stderr.on('data', (data) => {
+				console.log(data);
+				vscode.window.showErrorMessage(data);
+			});
+			np.stdout.on('data', (data) => {
+				if(data === 'close'){
+					run.end();
+				} else{
+					try {
+						let result = JSON.parse(data);
+						console.log(result);
+						if (result.report !== 'TaskOutcome.FAIL' && result.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+							run.passed(controller.items.get(result.name)!);
+						} else if (result.report === 'TaskOutcome.FAIL') {
+							run.failed(controller.items.get(result.name)!, new vscode.TestMessage('Failed!'));
+						} else if (result.report === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+							run.failed(controller.items.get(result.name)!, new vscode.TestMessage('Skipped bedcause previous failed!'));
+						};
+					} catch (error) {
+						console.log(error);
+						run.end();
 					}
-					run.end();
-				} catch (error) {
-					vscode.window.showErrorMessage('Script sent empty Report!');
-					run.end();
 				}
-			
+				
+				
 				
 			});
+		
+				
 		};
 	}
 	async function debugTasks() {
