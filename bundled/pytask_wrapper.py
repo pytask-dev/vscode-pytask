@@ -13,9 +13,9 @@ def toDict(session: pytask.Session, message: str):
         for report in session.execution_reports:
             attrs = {"name" : report.task.short_name, "path" : str(report.task.path), "report" : str(report.outcome)}
             list.append(attrs)
-        result = {"message" : message, "tasks" : list, "exitcode" : 0}
+        result = {"type" : "result", "message" : message, "tasks" : list, "exitcode" : 0}
     else:
-        result = {"message" : message, "exitcode" : 1}
+        result = {"type" : "result","message" : message, "exitcode" : 1}
     return result
 
 def startServer():
@@ -29,10 +29,10 @@ def startServer():
             print(e)
             conn.close()
             break
-        print(msg, end='', flush=True)
         if msg == 'close':
             conn.close()
             break
+        print(msg, flush=True)
     listener.close()
 
 def startPytask(args):

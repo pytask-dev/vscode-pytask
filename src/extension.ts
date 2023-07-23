@@ -152,13 +152,13 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 		if (shouldDebug === false){
-			const run = controller.createTestRun(request,'Pytask',false);
+			const run = controller.createTestRun(request,'Pytask');
 			controller.items.forEach(test => {
 				test.busy = true;
 			});
 			runPytask(run);
 		} else {
-			const run = controller.createTestRun(request,'Pytask',false);
+			const run = controller.createTestRun(request,'Pytask');
 			runPytask(run);
 			debugTasks();
 		}
@@ -170,6 +170,7 @@ export function activate(context: vscode.ExtensionContext) {
 		(request, token) => {
 		  runHandler(false, request, token);
 		}
+		
 	);
 	runProfile.tag = pytaskTag;
 	//The Debug Profile for starting pytask in debug mode
@@ -352,33 +353,29 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 			var end = false;
 			np.stdout.on('data', (data) => {
-				console.log(data);
-				if (end === true){
-					console.log(data);
-					let result = JSON.parse(data);
+				let result = JSON.parse(data);
+				if (result.type === "result"){
 					run.appendOutput(formatText(result.message));
 					run.end();
-				} else {
-					if(data === 'close'){
-						end = true;
-					} else{
-						try {
-							let result = JSON.parse(data);
-							console.log(result);
-							let test = controller.items.get(result.name);
-							if (result.report !== 'TaskOutcome.FAIL' && result.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-								run.passed(test!);
-							} else if (result.report === 'TaskOutcome.FAIL') {
-								run.failed(test!, new vscode.TestMessage('Failed!'));
-							} else if (result.report === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-								run.failed(test!, new vscode.TestMessage('Skipped bedcause previous failed!'));
-							};
-							test!.busy = false;
-						} catch (error) {
-							console.log(error);
-							run.end();
-						}
+				}
+				if (result.type === "task"){
+					try {
+						console.log(result.name);
+						let test = controller.items.get(result.name);
+						if (result.report !== 'TaskOutcome.FAIL' && result.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+							console.log(test);
+							run.passed(test!);
+						} else if (result.report === 'TaskOutcome.FAIL') {
+							run.failed(test!, new vscode.TestMessage('Failed!'));
+						} else if (result.report === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+							run.failed(test!, new vscode.TestMessage('Skipped bedcause previous failed!'));
+						};
+						test!.busy = false;
+					} catch (error) {
+						console.log(error);
+						run.end();
 					}
+					
 				}
 				
 				
