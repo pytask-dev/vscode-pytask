@@ -350,26 +350,36 @@ export function activate(context: vscode.ExtensionContext) {
 				console.log(data);
 				vscode.window.showErrorMessage(data);
 			});
+			var end = false;
 			np.stdout.on('data', (data) => {
-				if(data === 'close'){
+				console.log(data);
+				if (end === true){
+					console.log(data);
+					let result = JSON.parse(data);
+					run.appendOutput(formatText(result.message));
 					run.end();
-				} else{
-					try {
-						let result = JSON.parse(data);
-						console.log(result);
-						if (result.report !== 'TaskOutcome.FAIL' && result.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-							run.passed(controller.items.get(result.name)!);
-						} else if (result.report === 'TaskOutcome.FAIL') {
-							run.failed(controller.items.get(result.name)!, new vscode.TestMessage('Failed!'));
-						} else if (result.report === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-							run.failed(controller.items.get(result.name)!, new vscode.TestMessage('Skipped bedcause previous failed!'));
-						};
-					} catch (error) {
-						console.log(error);
-						run.end();
+				} else {
+					if(data === 'close'){
+						end = true;
+					} else{
+						try {
+							let result = JSON.parse(data);
+							console.log(result);
+							let test = controller.items.get(result.name);
+							if (result.report !== 'TaskOutcome.FAIL' && result.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+								run.passed(test!);
+							} else if (result.report === 'TaskOutcome.FAIL') {
+								run.failed(test!, new vscode.TestMessage('Failed!'));
+							} else if (result.report === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+								run.failed(test!, new vscode.TestMessage('Skipped bedcause previous failed!'));
+							};
+							test!.busy = false;
+						} catch (error) {
+							console.log(error);
+							run.end();
+						}
 					}
 				}
-				
 				
 				
 			});

@@ -52,7 +52,7 @@ def startPytask(args):
             session = pytask.main(options)
             
     message = f.getvalue()
-    return json.dumps(toDict(session,message))
+    print(json.dumps(toDict(session,message)), end='', flush=True)
 if __name__ == "__main__":
     if sys.argv[1] == "build" or sys.argv[1] == "build_options":
         run = multiprocessing.Process(target=startPytask, args=(sys.argv,))
@@ -62,5 +62,5 @@ if __name__ == "__main__":
         run.join()
         server.join()
     else:
-        print(startPytask(sys.argv))
+        startPytask(sys.argv)
 # Print the JSON to stdout to communicate with the plugin
