@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import * as utils from './utils';
 import * as child from 'child_process';
 import * as path from 'path';
+import * as express from 'express';
 
 const util = require('node:util');
 
@@ -136,8 +137,8 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.executeCommand('testing.clearTestResults');
 		const watcher = vscode.workspace.createFileSystemWatcher('**/*.py');
 		watcher.onDidChange(uri => {if (uri.path.includes('task')){collctTasks();}}); // listen to files being changed
-		watcher.onDidCreate(uri => {collctTasks();}); // listen to files/folders being created
-		watcher.onDidDelete(uri => {collctTasks();}); // listen to files/folders getting deleted
+		watcher.onDidCreate(uri => {if (uri.path.includes('task')){collctTasks();}}); // listen to files/folders being created
+		watcher.onDidDelete(uri => {if (uri.path.includes('task')){collctTasks();}}); // listen to files/folders getting deleted
 	};
 	controller.refreshHandler = async test => {
 		collctTasks();
@@ -184,6 +185,32 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Collects all the Tasks to display them in the Test View
 	async function collctTasks() {
+		const express = require('express');
+		const bodyParser = require('body-parser');
+		const app = express();
+		app.use(bodyParser.json());
+		app.use(bodyParser.urlencoded({ extended: false }));
+		app.get('/pytask', (req: any, res: any) => {
+			
+		});
+		app.post('/pytask', (req: any, res: any) => {
+			console.log(req.body);
+			if (req.body.exitcode === 0) {
+				let collection = [];
+				for (const task of req.body.tasks) {
+					let uri = vscode.Uri.file(task.path);
+					let testitem = controller.createTestItem(task.name,task.name,uri);
+					testitem.tags = [...testitem.tags, pytaskTag];
+					console.log(testitem.tags);
+					collection.push(testitem);
+				}
+				controller.items.replace(collection);
+			}else {
+				vscode.window.showErrorMessage("Pytask Failed during Collection: Look at the Output Channel for further Information.");
+			}
+			res.json({answer : 'res'});
+		});
+		const server = app.listen(6000,'localhost');
 		//Selecting the python interpreter
 		let interpreter = utils.getInterpreter();
 		let workingdirectory = "";
@@ -209,30 +236,11 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log(myExtDir);
 		//When the Interpreter is found, run the Pytask Wrapper Script to collect the tasks
 		interpreter.then((value: string) => {
-			console.log(interpreter);
-			const np = child.execFile(value, ['-Xutf8', path.resolve(myExtDirabs), 'dry'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
-				console.log(stderr);
-				if (stderr.length >= 2) {
-					vscode.window.showErrorMessage(stderr);
-				}
-				//Parse the JSON that is printed to stdout by the wrapper script and add every task as a test item
-				let result = JSON.parse(stdout);
-				console.log(result);
-				if (result.exitcode === 0) {
-					let collection = [];
-					for (const task of result.tasks) {
-						let uri = vscode.Uri.file(task.path);
-						let testitem = controller.createTestItem(task.name,task.name,uri);
-						testitem.tags = [...testitem.tags, pytaskTag];
-						console.log(testitem.tags);
-						collection.push(testitem);
-					}
-					controller.items.replace(collection);
-				}else {
-					vscode.window.showErrorMessage("Pytask Failed during Collection: Look at the Output Channel for further Information.");
-					channel.appendLine(result.message);
-				}
-				
+			console.log(value);
+			const np = child.execFile(value, ['-Xutf8', '-m', 'pytask', 'collect'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+				console.log('hier');
+				console.log(stdout);
+				server.close();
 				
 				
 			});
@@ -344,44 +352,41 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 
 		} else{
-			const np = child.spawn(interpreter, ['-Xutf8', path.resolve(myExtDirabs), 'build'], { cwd : workingdirectory});
-			np.stdout.setEncoding('utf-8');
-			np.stderr.setEncoding('utf-8');
-			np.stderr.on('data', (data) => {
-				console.log(data);
-				vscode.window.showErrorMessage(data);
+			const express = require('express');
+			const bodyParser = require('body-parser');
+			const app = express();
+			app.use(bodyParser.json());
+			app.use(bodyParser.urlencoded({ extended: false }));
+			app.get('/pytask', (req: any, res: any) => {
+				
 			});
-			var end = false;
-			np.stdout.on('data', (data) => {
-				let result = JSON.parse(data);
-				if (result.type === "result"){
-					run.appendOutput(formatText(result.message));
+			app.post('/pytask', (req: any, res: any) => {
+				try {
+					console.log(req.body.name);
+					let test = controller.items.get(req.body.name);
+					if (req.body.outcome !== 'TaskOutcome.FAIL' && req.body.outcome !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+						console.log(test);
+						run.passed(test!);
+					} else if (req.body.outcome === 'TaskOutcome.FAIL') {
+						run.failed(test!, new vscode.TestMessage('Failed!'));
+					} else if (req.body.outcome === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+						run.failed(test!, new vscode.TestMessage('Skipped bedcause previous failed!'));
+					};
+					test!.busy = false;
+				} catch (error) {
+					console.log(error);
 					run.end();
 				}
-				if (result.type === "task"){
-					try {
-						console.log(result.name);
-						let test = controller.items.get(result.name);
-						if (result.report !== 'TaskOutcome.FAIL' && result.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-							console.log(test);
-							run.passed(test!);
-						} else if (result.report === 'TaskOutcome.FAIL') {
-							run.failed(test!, new vscode.TestMessage('Failed!'));
-						} else if (result.report === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-							run.failed(test!, new vscode.TestMessage('Skipped bedcause previous failed!'));
-						};
-						test!.busy = false;
-					} catch (error) {
-						console.log(error);
-						run.end();
-					}
-					
-				}
-				
-				
+				res.json({answer : 'response'});
 			});
-		
+			const server = app.listen(6000,'localhost');
+			const np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
 				
+				console.log(stdout);
+				run.appendOutput(stdout);
+				run.end();
+				server.close();
+			});	
 		};
 	}
 	async function debugTasks() {
