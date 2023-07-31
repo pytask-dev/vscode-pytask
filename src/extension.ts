@@ -236,6 +236,10 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log(myExtDir);
 		//When the Interpreter is found, run the Pytask Wrapper Script to collect the tasks
 		interpreter.then((value: string) => {
+			if (!utils.checkIfModulesInstalled(value)){
+				vscode.window.showErrorMessage('Pytask-Vscode not installed in this environment!');
+				return;
+			}
 			console.log(value);
 			const np = child.execFile(value, ['-Xutf8', '-m', 'pytask', 'collect'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
 				console.log('hier');
@@ -250,6 +254,11 @@ export function activate(context: vscode.ExtensionContext) {
 	async function runPytask(run : vscode.TestRun) {
 		//Find the python interpreter
 		let interpreter =  await utils.getInterpreter();
+		if (!utils.checkIfModulesInstalled(interpreter)){
+			run.end();
+			vscode.window.showErrorMessage('Please install both pytask and pytask-vscode to use the Extension!');
+			return;
+		}
 		let workingdirectory = "";
 		let np = new child.ChildProcess;
 		run.token.onCancellationRequested(() => {

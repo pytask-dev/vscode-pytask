@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { ProposedExtensionAPI } from './proposedApiTypes';
+import * as child from 'child_process';
+import { stderr } from 'process';
 
 //This function uses the Python Plugins API to locate the currently selected python interpreter
 export async function getInterpreter(): Promise<string> {
@@ -22,6 +24,14 @@ export async function getInterpreter(): Promise<string> {
     }
         
     
+}
+export function checkIfModulesInstalled(interpreter: string) : Boolean{
+    const stdout = child.execSync(interpreter + " -m pip list");
+        
+    if (stdout.includes('pytask-vscode')){
+        return true;
+    };
+    return false;
 }
 export function checkOpenTerminal(terminals: readonly vscode.Terminal[]): vscode.Terminal | undefined{
     let value;
