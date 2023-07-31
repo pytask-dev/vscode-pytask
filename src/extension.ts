@@ -279,21 +279,16 @@ export function activate(context: vscode.ExtensionContext) {
 		//Run the Wrapper Script with the build command
 		if (vscode.workspace.getConfiguration().get('pytask.enableCommandLineOptions') === 'textprompt' || vscode.workspace.getConfiguration().get('pytask.enableCommandLineOptions') === 'list'){
 			
-			var options:  any = {};
+			var options: string[] = [];
 
 			if (vscode.workspace.getConfiguration().get('pytask.enableCommandLineOptions') === 'textprompt'){
-				let commandLineArgs = vscode.window.showInputBox({
+				let commandLineArgs = await vscode.window.showInputBox({
 					placeHolder: "Command Line Arguments",
 					prompt: "Provide the pytask options you want to use!"
 				});
-				commandLineArgs.then((args : string | undefined) => {
-					if ( args !== undefined){
-						let input = args.split(" ");
-						if (input[0] !== ""){
-							options = util.parseArgs({options : pytask_options, args: input}).values;
-						};
-					};
-				});
+				if (commandLineArgs !== undefined){
+					options = commandLineArgs.split(' ');
+				}
 			};
 			if (vscode.workspace.getConfiguration().get('pytask.enableCommandLineOptions') === 'list'){
 				let list = Object.keys(pytask_options);
@@ -306,13 +301,13 @@ export function activate(context: vscode.ExtensionContext) {
 							prompt: "Provide a value for " + selection[i]
 						});
 						if (value !== undefined && /^-?\d+$/.test(value)){
-							options[selection[i]] = +value;
+							options = options.concat(['--' + selection[i], value]);
 						} else if (value !== undefined){
-							options[selection[i]] = value;
+							options = options.concat(['--'+selection[i], value]);
 						};
 						
 						} else {
-							options[selection[i]] = true;
+							options = options.concat('--' + [selection[i]]);
 						};
 					};
 				};					
@@ -321,35 +316,42 @@ export function activate(context: vscode.ExtensionContext) {
 				
 			};
 			
-			np = child.execFile(interpreter, ['-Xutf8', path.resolve(myExtDirabs), 'build_options',JSON.stringify(options)], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
-				console.log(stderr);
-				if (stderr.length >= 2) {
-					vscode.window.showErrorMessage(stderr);
-				}
-				let result = JSON.parse(stdout);
-				//Send Pytasks CLI Output to the VSCode Output channel
-				run.appendOutput(formatText(result.message));
-				channel.append(result.message);
-				console.log(result.tasks);
-				//Parse the Run results from pytask and send them to the Test API
-				try {
-					for (const task of result.tasks) {
-						if (task.report !== 'TaskOutcome.FAIL' && task.report !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-							run.passed(controller.items.get(task.name)!);
-						} else if (task.report === 'TaskOutcome.FAIL') {
-							run.failed(controller.items.get(task.name)!, new vscode.TestMessage('Failed!'));
-						} else if (task.report === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-							run.failed(controller.items.get(task.name)!, new vscode.TestMessage('Skipped bedcause previous failed!'));
-						};
-					};
-					run.end();
-				} catch (error) {
-					vscode.window.showErrorMessage('Script sent empty Report!');
-					run.end();
-				};
-				
+			const express = require('express');
+			const bodyParser = require('body-parser');
+			const app = express();
+			app.use(bodyParser.json());
+			app.use(bodyParser.urlencoded({ extended: false }));
+			app.get('/pytask', (req: any, res: any) => {
 				
 			});
+			app.post('/pytask', (req: any, res: any) => {
+				try {
+					console.log(req.body.name);
+					let test = controller.items.get(req.body.name);
+					if (req.body.outcome !== 'TaskOutcome.FAIL' && req.body.outcome !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+						console.log(test);
+						run.passed(test!);
+					} else if (req.body.outcome === 'TaskOutcome.FAIL') {
+						run.failed(test!, new vscode.TestMessage('Failed!'));
+					} else if (req.body.outcome === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+						run.failed(test!, new vscode.TestMessage('Skipped bedcause previous failed!'));
+					};
+					test!.busy = false;
+				} catch (error) {
+					console.log(error);
+					run.end();
+				}
+				res.json({answer : 'response'});
+			});
+			const server = app.listen(6000,'localhost');
+			const np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'].concat(options), { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+				
+				console.log(stdout);
+				channel.appendLine(stdout);
+				run.appendOutput(stdout);
+				run.end();
+				server.close();
+			});	
 
 		} else{
 			const express = require('express');
@@ -383,6 +385,7 @@ export function activate(context: vscode.ExtensionContext) {
 			const np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
 				
 				console.log(stdout);
+				channel.appendLine(stdout);
 				run.appendOutput(stdout);
 				run.end();
 				server.close();
