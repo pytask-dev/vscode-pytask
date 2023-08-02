@@ -242,6 +242,9 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			console.log(value);
 			const np = child.execFile(value, ['-Xutf8', '-m', 'pytask', 'collect'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+				if (stderr.length > 2){
+					vscode.window.showErrorMessage(stderr);
+				}
 				console.log('hier');
 				console.log(stdout);
 				server.close();
@@ -368,6 +371,13 @@ export function activate(context: vscode.ExtensionContext) {
 			const server = app.listen(6000,'localhost');
 			const np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'].concat(options), { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
 				
+				if (stderr.length > 2){
+					vscode.window.showErrorMessage(stderr);
+					run.appendOutput('Run failed!');
+				}
+				controller.items.forEach(test => {
+					test.busy = false;
+				});
 				console.log(stdout);
 				channel.appendLine(stdout);
 				run.appendOutput(stdout);
@@ -405,7 +415,12 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 			const server = app.listen(6000,'localhost');
 			const np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
-				
+				if (stderr.length > 2){
+					vscode.window.showErrorMessage(stderr);
+				}
+				controller.items.forEach(test => {
+					test.busy = true;
+				});
 				console.log(stdout);
 				channel.appendLine(stdout);
 				run.appendOutput(stdout);
