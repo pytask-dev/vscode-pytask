@@ -141,7 +141,12 @@ export function activate(context: vscode.ExtensionContext) {
 		watcher.onDidDelete(uri => {if (uri.path.includes('task')){collctTasks();}}); // listen to files/folders getting deleted
 	};
 	controller.refreshHandler = async test => {
-		collctTasks();
+		try {
+			collctTasks();
+		} catch (error:any) {
+			vscode.window.showErrorMessage(error);
+		}
+		
 	};
 	//Is used when the user starts a pytask run
 	function runHandler(
@@ -157,7 +162,12 @@ export function activate(context: vscode.ExtensionContext) {
 			controller.items.forEach(test => {
 				test.busy = true;
 			});
-			runPytask(run);
+			try {
+				runPytask(run);
+			} catch (error:any) {
+				vscode.window.showErrorMessage(error);
+			}
+			
 		} else {
 			const run = controller.createTestRun(request,'Pytask');
 			runPytask(run);
@@ -245,6 +255,7 @@ export function activate(context: vscode.ExtensionContext) {
 				if (stderr.length > 2){
 					vscode.window.showErrorMessage(stderr);
 				}
+				channel.appendLine(stdout);
 				console.log('hier');
 				console.log(stdout);
 				server.close();

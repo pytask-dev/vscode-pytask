@@ -1,14 +1,11 @@
 # Pytask VS Code Extension
-The Extension integrates Pytask into the VS Code Test Explorer. It will discover all tasks inside the current working folder and you will be able to run them all at once by clicking "Run Pytask" inside the Test Explorer UI. The pytask output from your run will appear inside the Pytask Output Channel. You can also use pytasks debug functionality by clicking on "Debug Tasks". This will make pytask stop and start debugging on the first error it encounters. Then a mock console will appear through which you can interact with the debugger.
+The Extension integrates Pytask into the VS Code Test Explorer. It will discover all tasks inside the current working folder and you will be able to run them all at once by clicking "Run Pytask" inside the Test Explorer UI. The result of each task will be updated once a task is finished. The Pytask Output will appear as the Result of the Test Run. You can select your preferred way to input command line options in the extension settings.
 
 ![Screenshot 2023-05-09 152528](https://github.com/mj023/pytask_vscode/assets/29777594/916795cd-327b-4d76-bea0-5e6a30149f7a)
 
 ## Installation
-1. Download the .vsix File
-2. Open VS Code
-3. Open the Extensions Tab
-4. Click on "Views and More Actions..." (the three dots in the upper right corner)
-5. Click "Install from VSIX"
+1. Search for Pytask in the Extension Marketplace and install it.
+2. Add the pytask-vscode plugin from https://test.pypi.org/project/pytask-vscode/ to your python environment. Or use the pip command: ```pip install -i https://test.pypi.org/simple/ pytask-vscode```.
 
-## Running the Extension
-Requires VS Code Python Extension and a python environment that can run pytask.
+## Requirements
+Requires VS Code Python Extension and a python environment that has pytask and pytask-vscode installed.
