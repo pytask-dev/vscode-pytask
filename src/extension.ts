@@ -305,18 +305,31 @@ export function activate(context: vscode.ExtensionContext) {
 				if (selection !== undefined){
 					for (let i = 0; i < selection.length; i++) {
 						if (pytask_options[selection[i]].type === 'string'){
-						let value =  await vscode.window.showInputBox({
-							placeHolder: "Value",
-							prompt: "Provide a value for " + selection[i]
-						});
-						if (value !== undefined && /^-?\d+$/.test(value)){
-							options = options.concat(['--' + selection[i], value]);
-						} else if (value !== undefined){
-							options = options.concat(['--'+selection[i], value]);
-						};
+							let value =  await vscode.window.showInputBox({
+								placeHolder: "Value",
+								prompt: "Provide a value for " + selection[i]
+							});
+							if (value !== undefined && /^-?\d+$/.test(value)){
+								if (pytask_options[selection[i]].short){
+									options = options.concat(['-' + pytask_options[selection[i]].short, value]);
+								} else {
+									options = options.concat(['--' + selection[i], value]);
+								}
+								
+							} else if (value !== undefined){
+								if (pytask_options[selection[i]].short){
+									options = options.concat(['-' + pytask_options[selection[i]].short, value]);
+								} else {
+									options = options.concat(['--' + selection[i], value]);
+								}
+							};
 						
 						} else {
-							options = options.concat('--' + [selection[i]]);
+							if (pytask_options[selection[i]].short){
+								options = options.concat(['-' + pytask_options[selection[i]].short]);
+							} else {
+								options = options.concat(['--' + selection[i]]);
+							}
 						};
 					};
 				};					
