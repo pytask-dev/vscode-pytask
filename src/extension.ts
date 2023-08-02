@@ -380,7 +380,7 @@ export function activate(context: vscode.ExtensionContext) {
 				});
 				console.log(stdout);
 				channel.appendLine(stdout);
-				run.appendOutput(stdout);
+				run.appendOutput(formatText(stdout));
 				run.end();
 				server.close();
 			});	
@@ -419,11 +419,11 @@ export function activate(context: vscode.ExtensionContext) {
 					vscode.window.showErrorMessage(stderr);
 				}
 				controller.items.forEach(test => {
-					test.busy = true;
+					test.busy = false;
 				});
 				console.log(stdout);
 				channel.appendLine(stdout);
-				run.appendOutput(stdout);
+				run.appendOutput(formatText(stdout));
 				run.end();
 				server.close();
 			});	
