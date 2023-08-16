@@ -20,7 +20,7 @@ const actions = {
   clear: "\x1b[2J\x1b[3J\x1b[;H",
 };
 
-
+// List of possible command line options for pytask
 var pytask_options : {[option : string] : any} = {
 			'config':{
 				type : 'string',
@@ -108,9 +108,10 @@ var pytask_options : {[option : string] : any} = {
 			},
 			};
 
-// Cleanup inconsitent line breaks
+// Function to cleanup inconsitent line breaks
 const formatText = (text: string) => `${text.replace(/[\r\n]+/g,"\r\n")}`;
 
+// Test Tag for tests created by the extension
 const pytaskTag = new vscode.TestTag('Pytask');
 
 // This method is called when the extension is activated
@@ -132,19 +133,27 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.commands.executeCommand('testing.clearTestResults');
 	//Creates the pytask channel, where the Pytask CLI Output will be displayed
 	const channel = vscode.window.createOutputChannel("Pytask");
+
+	// Checks for tasks the first time the testing window is opened
 	controller.resolveHandler = async test => {
-		collctTasks();
+		try {
+			collctTasks();
+		} catch (error) {
+			vscode.window.showErrorMessage('The following Error occured during Collection: ' + error);
+		}
+		
 		vscode.commands.executeCommand('testing.clearTestResults');
 		const watcher = vscode.workspace.createFileSystemWatcher('**/*.py');
 		watcher.onDidChange(uri => {if (uri.path.includes('task')){collctTasks();}}); // listen to files being changed
 		watcher.onDidCreate(uri => {if (uri.path.includes('task')){collctTasks();}}); // listen to files/folders being created
 		watcher.onDidDelete(uri => {if (uri.path.includes('task')){collctTasks();}}); // listen to files/folders getting deleted
 	};
+	// Checks for tasks when the refresh button is clicked
 	controller.refreshHandler = async test => {
 		try {
 			collctTasks();
 		} catch (error:any) {
-			vscode.window.showErrorMessage(error);
+			vscode.window.showErrorMessage('The following Error occured during Collection: ' + error);
 		}
 		
 	};
@@ -154,6 +163,7 @@ export function activate(context: vscode.ExtensionContext) {
 		request: vscode.TestRunRequest,
 		token: vscode.CancellationToken
 	  ) {
+		// Can't run single tests, therefore return
 		if (request.include !== undefined){
 			return;
 		}
@@ -165,7 +175,7 @@ export function activate(context: vscode.ExtensionContext) {
 			try {
 				runPytask(run);
 			} catch (error:any) {
-				vscode.window.showErrorMessage(error);
+				vscode.window.showErrorMessage('The following Error occured during durin the Run: ' + error);
 			}
 			
 		} else {
@@ -222,7 +232,7 @@ export function activate(context: vscode.ExtensionContext) {
 		});
 		const server = app.listen(6000,'localhost');
 		//Selecting the python interpreter
-		let interpreter = utils.getInterpreter();
+		let interpreter = await utils.getInterpreter();
 		let workingdirectory = "";
 		//Find the folder that is currently opened
 		if(vscode.workspace.workspaceFolders !== undefined) {
@@ -235,33 +245,20 @@ export function activate(context: vscode.ExtensionContext) {
 		
 			vscode.window.showErrorMessage(message);
 		}
-		//Find the install location of the plugin
-		let myExtDirabs = vscode.extensions.getExtension("mj023.pytask")!.extensionPath;
-		if (myExtDirabs === undefined){
-			let message = "Could not find extension path!";
-			vscode.window.showErrorMessage(message);
+		//When the Interpreter is found, check if the Pytask-VSCode Module is installed
+		if (!utils.checkIfModulesInstalled(interpreter)){
+			vscode.window.showErrorMessage('Pytask-Vscode is not installed in your current environment (' + await utils.getEnvName(interpreter) + ')');
+			return;
 		}
-		let myExtDir = path.parse(myExtDirabs);
-		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
-		console.log(myExtDir);
-		//When the Interpreter is found, run the Pytask Wrapper Script to collect the tasks
-		interpreter.then((value: string) => {
-			if (!utils.checkIfModulesInstalled(value)){
-				vscode.window.showErrorMessage('Pytask-Vscode not installed in this environment!');
-				return;
+		// Start Pytask Collection
+		const np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'collect'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+			if (stderr.length > 2){
+				vscode.window.showErrorMessage(stderr);
 			}
-			console.log(value);
-			const np = child.execFile(value, ['-Xutf8', '-m', 'pytask', 'collect'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
-				if (stderr.length > 2){
-					vscode.window.showErrorMessage(stderr);
-				}
-				channel.appendLine(stdout);
-				console.log('hier');
-				console.log(stdout);
-				server.close();
-				
-				
-			});
+			channel.appendLine(stdout);
+			server.close();
+			
+			
 		});
 	}
 	//Run all Tasks
@@ -270,7 +267,7 @@ export function activate(context: vscode.ExtensionContext) {
 		let interpreter =  await utils.getInterpreter();
 		if (!utils.checkIfModulesInstalled(interpreter)){
 			run.end();
-			vscode.window.showErrorMessage('Please install both pytask and pytask-vscode to use the Extension!');
+			vscode.window.showErrorMessage('Pytask-Vscode is not installed in your current environment (' + await utils.getEnvName(interpreter) + ')');
 			return;
 		}
 		let workingdirectory = "";
@@ -291,15 +288,7 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.window.showErrorMessage(message);
 			return;
 		}
-		//Find the plugins install location
-		let myExtDirabs = vscode.extensions.getExtension("mj023.pytask")!.extensionPath;
-		if (myExtDirabs === undefined){
-			let message = "Could not find extension path!";
-			vscode.window.showErrorMessage(message);
-			return;
-		}
-		myExtDirabs = path.join(myExtDirabs, 'bundled','pytask_wrapper.py');
-		//Run the Wrapper Script with the build command
+		// If one of the Option Modes is selected, promt user for options and create the command line string that will be passed to pytask
 		if (vscode.workspace.getConfiguration().get('pytask.enableCommandLineOptions') === 'textprompt' || vscode.workspace.getConfiguration().get('pytask.enableCommandLineOptions') === 'list'){
 			
 			var options: string[] = [];
@@ -352,6 +341,7 @@ export function activate(context: vscode.ExtensionContext) {
 				
 			};
 			
+			// Start a server that is listening on Port 6000 for data from pytask
 			const express = require('express');
 			const bodyParser = require('body-parser');
 			const app = express();
@@ -380,6 +370,7 @@ export function activate(context: vscode.ExtensionContext) {
 				res.json({answer : 'response'});
 			});
 			const server = app.listen(6000,'localhost');
+			// Start Pytask
 			const np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'].concat(options), { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
 				
 				if (stderr.length > 2){
@@ -448,7 +439,6 @@ export function activate(context: vscode.ExtensionContext) {
 		if(vscode.workspace.workspaceFolders !== undefined) {
 			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
 			console.log(workingdirectory);
-
 		} 
 		else {
 			let message = "Working folder not found, open a folder and try again" ;

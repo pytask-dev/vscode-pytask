@@ -25,6 +25,24 @@ export async function getInterpreter(): Promise<string> {
         
     
 }
+export async function getEnvName(path:string) {
+    const extension = vscode.extensions.getExtension('ms-python.python');
+    let name;
+    if (extension) {
+        if (!extension.isActive) {
+            await extension.activate();
+        }
+        const pythonApi: ProposedExtensionAPI = extension.exports as ProposedExtensionAPI;
+        const environmentPath = pythonApi.environments.getActiveEnvironmentPath();
+        const environment = await pythonApi.environments.resolveEnvironment(environmentPath);
+        name = environment?.environment?.name;
+    }
+    if (name !== undefined) {
+        return name;
+    }else {
+        return 'undefined';
+    }
+}
 export function checkIfModulesInstalled(interpreter: string) : Boolean{
     const stdout = child.execSync(interpreter + " -m pip list");
         
