@@ -14,12 +14,12 @@ Requires VS Code Python Extension and a python environment that has pytask and p
 
 1. The tasks that Pytask collected in your currently opened folder will be displayed as test items once you open the testing tab. You can find the CLI Output from Pytask by selecting the Pytask Channel in the Output Channel dropdown menu. Refresh the list with the Refresh Button.
 
-![Task Collection](docs/Task_discovery.png)
+![Task Collection](doc/Task_discovery.png)
 
 2. Select 'Run Pytask' to only run the tasks and ignore all other tests in the project. If you selected 'textpromt' or 'list' in the extensions settings, you will be asked to input your desired command line options. One by one the tasks will update their status.
 
-![Task Collection](docs/progression.png)
+![Task Collection](doc/progression.png)
 
 3. Once all the tasks have finished the Pytask CLI output will be displayed in the Test Results Tab. In the end the extension should look like this.
 
-![Task Collection](docs/result.png)
+![Task Collection](doc/result.png)
