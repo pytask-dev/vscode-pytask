@@ -170,7 +170,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (shouldDebug === false){
 			const run = controller.createTestRun(request,'Pytask');
 			controller.items.forEach(test => {
-				test.busy = true;
+				run.started(test);
 			});
 			try {
 				runPytask(run);
@@ -272,11 +272,6 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		let workingdirectory = "";
 		let np = new child.ChildProcess;
-		run.token.onCancellationRequested(() => {
-			np.kill();
-			run.appendOutput('Run cancelled.');
-			run.end();
-		});
 		//Find the current working directory
 		if(vscode.workspace.workspaceFolders !== undefined) {
 			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
@@ -352,6 +347,7 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 			app.post('/pytask', (req: any, res: any) => {
 				try {
+					console.log('hier');
 					console.log(req.body.name);
 					let test = controller.items.get(req.body.name);
 					if (req.body.outcome !== 'TaskOutcome.FAIL' && req.body.outcome !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
@@ -371,10 +367,11 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 			const server = app.listen(6000,'localhost');
 			// Start Pytask
-			const np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'].concat(options), { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+			np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'].concat(options), { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
 				
 				if (stderr.length > 2){
 					vscode.window.showErrorMessage(stderr);
+					console.log(stderr);
 					run.appendOutput('Run failed!');
 				}
 				controller.items.forEach(test => {
@@ -416,19 +413,29 @@ export function activate(context: vscode.ExtensionContext) {
 				res.json({answer : 'response'});
 			});
 			const server = app.listen(6000,'localhost');
-			const np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
-				if (stderr.length > 2){
-					vscode.window.showErrorMessage(stderr);
-				}
-				controller.items.forEach(test => {
-					test.busy = false;
-				});
-				console.log(stdout);
-				channel.appendLine(stdout);
-				run.appendOutput(formatText(stdout));
-				run.end();
+			run.token.onCancellationRequested(() => {
 				server.close();
-			});	
+				np.kill();
+				run.appendOutput('Run cancelled.\n');
+				run.end();
+				console.log('cancelled');
+				
+			});
+			if (!run.token.isCancellationRequested){
+				np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+					if (stderr.length > 2){
+						vscode.window.showErrorMessage(stderr);
+					}
+					controller.items.forEach(test => {
+						test.busy = false;
+					});
+					console.log(stdout);
+					channel.appendLine(stdout);
+					run.appendOutput(formatText(stdout));
+					run.end();
+					server.close();
+				});
+			};	
 		};
 	}
 	async function debugTasks() {
