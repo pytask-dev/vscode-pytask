@@ -22,4 +22,4 @@ Requires VS Code Python Extension and a python environment that has pytask and p
 
 3. Once all the tasks have finished the Pytask CLI output will be displayed in the Test Results Tab. In the end the extension should look like this.
 
-![Task Collection](doc/result.png)
+![Task Collection](doc/results.png)
