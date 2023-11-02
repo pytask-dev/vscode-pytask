@@ -165,9 +165,11 @@ export function activate(context: vscode.ExtensionContext) {
 	  ) {
 		// Can't run single tests, therefore return
 		if (request.include !== undefined){
+			vscode.window.showErrorMessage('Unable to run single test, please use Run Button at the top.');
 			return;
 		}
 		if (shouldDebug === false){
+			vscode.commands.executeCommand('testing.clearTestResults');
 			const run = controller.createTestRun(request,'Pytask');
 			controller.items.forEach(test => {
 				run.started(test);
@@ -351,12 +353,12 @@ export function activate(context: vscode.ExtensionContext) {
 					console.log(req.body.name);
 					let test = controller.items.get(req.body.name);
 					if (req.body.outcome !== 'TaskOutcome.FAIL' && req.body.outcome !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-						console.log(test);
 						run.passed(test!);
 					} else if (req.body.outcome === 'TaskOutcome.FAIL') {
-						run.failed(test!, new vscode.TestMessage('Failed!'));
+						run.failed(test!, new vscode.TestMessage(req.body.exc_info));
+						console.log(req.body.exc_info);
 					} else if (req.body.outcome === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-						run.failed(test!, new vscode.TestMessage('Skipped bedcause previous failed!'));
+						run.failed(test!, new vscode.TestMessage('Skipped because previous Task failed!'));
 					};
 					test!.busy = false;
 				} catch (error) {
@@ -371,13 +373,11 @@ export function activate(context: vscode.ExtensionContext) {
 				
 				if (stderr.length > 2){
 					vscode.window.showErrorMessage(stderr);
-					console.log(stderr);
 					run.appendOutput('Run failed!');
 				}
 				controller.items.forEach(test => {
 					test.busy = false;
 				});
-				console.log(stdout);
 				channel.appendLine(stdout);
 				run.appendOutput(formatText(stdout));
 				run.end();
@@ -401,7 +401,7 @@ export function activate(context: vscode.ExtensionContext) {
 						console.log(test);
 						run.passed(test!);
 					} else if (req.body.outcome === 'TaskOutcome.FAIL') {
-						run.failed(test!, new vscode.TestMessage('Failed!'));
+						run.failed(test!, new vscode.TestMessage(req.body.exc_info));
 					} else if (req.body.outcome === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
 						run.failed(test!, new vscode.TestMessage('Skipped bedcause previous failed!'));
 					};
