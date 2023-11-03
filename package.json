@@ -3,8 +3,9 @@
   "publisher": "mj023",
   "displayName": "Pytask",
   "repository": "https://github.com/mj023/pytask_vscode",
-  "description": "",
-  "version": "0.0.9",
+  "description": "An Extension that enables the use of Pytask in VSCode",
+  "icon": "doc/pytask.png",
+  "version": "0.0.11",
   "engines": {
     "vscode": "^1.74.0"
   },
