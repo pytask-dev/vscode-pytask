@@ -1,23 +1,15 @@
 # Pytask VS Code Extension
-The Extension integrates Pytask into the VS Code Test Explorer. It will discover all tasks inside the current working folder and you will be able to run them all at once by clicking "Run Pytask" inside the Test Explorer UI. The result of each task will be updated once a task is finished. The Pytask Output will appear as the Result of the Test Run. You can select your preferred way to input command line options in the extension settings.
+This Extension integrates Pytask into the VS Code Test Explorer. It collects all tasks in the currently opened folder and gives the user the ability to run them with the simple click of a button.
 
 ## Installation
-1. Search for Pytask in the Extension Marketplace and install it.
-2. Add the pytask-vscode plugin from https://test.pypi.org/project/pytask-vscode/ to your python environment. Or use the pip command: ```pip install -i https://test.pypi.org/simple/ pytask-vscode```
+1. Search for Pytask in the Extension View ![Icon](doc/icon_ext.png) of VSCode and install the extension.
+2. Use ```pip install -i https://test.pypi.org/simple/ pytask-vscode``` to install the pytask vscode plugin.
 
-## Requirements
-Requires VS Code Python Extension and a python environment that has pytask and pytask-vscode installed.
+## Getting started
 
-## How to use the Extension
+1. Open the folder that contains your pytask project in VSCode.
 
-1. The tasks that Pytask collected in your currently opened folder will be displayed as test items once you open the testing tab. You can find the CLI Output from Pytask by selecting the Pytask Channel in the Output Channel dropdown menu. Refresh the list with the Refresh Button.
+2. Select the python environment where you installed the plugin as your current interpreter.
 
-![Task Collection](doc/Task_discovery.png)
+3. Open VSCodes's Testing View ![Icon](doc/icon_test.png).
 
-2. Select 'Run Pytask' to only run the tasks and ignore all other tests in the project. If you selected 'textpromt' or 'list' in the extensions settings, you will be asked to input your desired command line options. One by one the tasks will update their status.
-
-![Task Collection](doc/progression.png)
-
-3. Once all the tasks have finished the Pytask CLI output will be displayed in the Test Results Tab. In the end the extension should look like this.
-
-![Task Collection](doc/results.png)
