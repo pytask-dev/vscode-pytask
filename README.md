@@ -9,7 +9,7 @@ This Extension integrates Pytask into the VS Code Test Explorer. It collects all
 
 1. Open the folder that contains your pytask project in VSCode.
 2. Select the python environment where you installed the plugin as your current interpreter.
-3. Open VSCodes's Testing View. Icon: <img src="doc/icon_test.png" width="50%" height="50%">
+3. Open VSCodes's Testing View. Icon: <img src="doc/icon_test.png" width="12" height="12">
 4. Wait for the Tasks to load.
 5. Click the Run Tests Button at the top of the Testing View.
 6. Inspect the results in the Test Results Tab at the bottom. If you click on a failed Task, you will be shown a summary of what went wrong in that specific Task.
