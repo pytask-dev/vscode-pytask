@@ -1,4 +1,4 @@
-# Pytask VS Code Extension
+# Pytask Extension
 This Extension integrates Pytask into the VS Code Test Explorer. It collects all tasks in the currently opened folder and gives the user the ability to run them with the simple click of a button.
 
 ## Installation
