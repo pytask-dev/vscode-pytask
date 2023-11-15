@@ -20,8 +20,9 @@ There are two ways to input command line arguments for your pytask run. Open the
 - ```text``` : you will be prompted for a string containing your arguments, like in the terminal
 - ```list``` : you will be presented with a list of all possible arguments
 You will now be asked to input command line arguments each time you run pytask.
-[!Warning]
-Not all command line arguments are supported yet.
+
+>[!Warning]
+>Not all command line arguments are supported yet.
 
 
 
