@@ -2,7 +2,7 @@
   "name": "pytask",
   "publisher": "mj023",
   "displayName": "Pytask",
-  "repository": "https://github.com/mj023/pytask_vscode",
+  "repository": {"url": "https://github.com/mj023/pytask_vscode"},
   "description": "An Extension that enables the use of Pytask in VSCode",
   "icon": "doc/pytask.png",
   "version": "0.0.11",
