@@ -26,8 +26,16 @@ You will now be asked to input command line arguments each time you run pytask.
 
 ## Troubleshooting
 Here you can find Tips for the most commonly occuring problems.
-### What to do if my task are not showing the Test Explorer?
-1. Check if you opened the right folder. 
+### What to do if my task are not showing up in the Test Explorer?
+1. Check if you opened the right folder. If you work from a repository this should usually be the root folder of the project.
+2. Check if you selected the right interpreter. You can click on the search bar at the top and then search for the command ```Python: Select Interpreter``` to change it.
+3. Go to the Output Tab and select the Pytask Output Channel. If the collection of the tasks failed, you should see that in the collection report.
+4. Check if Port 6000 is blocked by your firewall, the extension needs this port to communicate with pytask.
+### What to do if my run never stops or gives a cryptic error message?
+1. You can stop the run by clicking on the stop button next to where you started the run.
+2. Go to the Output Tab and select the Pytask Output Channel. Sometimes information about the run can be found there.
+3. Delete the ```.pytask.sqlite3``` file in your project directory.
+
 
 
 
