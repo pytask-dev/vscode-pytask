@@ -22,7 +22,12 @@ There are two ways to input command line arguments for your pytask run. Open the
 You will now be asked to input command line arguments each time you run pytask.
 
 >[!Warning]
->Not all command line arguments are supported yet.
+>Currently only arguments that need no further interaction with pytask are supported. For example ```--pdb``` or ```--trace``` don't work.
+
+## Troubleshooting
+Here you can find Tips for the most commonly occuring problems.
+### What to do if my task are not showing the Test Explorer?
+1. Check if you opened the right folder. 
 
 
 
