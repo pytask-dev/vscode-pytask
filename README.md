@@ -24,6 +24,8 @@ You will now be asked to input command line arguments each time you run pytask.
 >[!Warning]
 >Currently only arguments that need no further interaction with pytask are supported. For example ```--pdb``` or ```--trace``` don't work.
 
+![Gif of Settings](doc/settings.gif)
+
 ## Troubleshooting
 Here you can find Tips for the most commonly occuring problems.
 ### What to do if my task are not showing up in the Test Explorer?
