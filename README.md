@@ -3,7 +3,7 @@ This Extension integrates Pytask into the VS Code Test Explorer. It collects all
 
 ## Installation
 1. Search for Pytask in the Extension View of VSCode and install the extension. <img src="doc/icon_ext.png" alt="Extensions Icon" width="16" height="16">
-2. Use ```pip install -i https://test.pypi.org/simple/ pytask-vscode``` to install the pytask vscode plugin.
+2. Use ```pip install pytask-vscode``` to install the pytask vscode plugin.
 
 ## First Steps
 1. Open the folder that contains your pytask project in VSCode.
