@@ -212,9 +212,6 @@ export function activate(context: vscode.ExtensionContext) {
 		const app = express();
 		app.use(bodyParser.json());
 		app.use(bodyParser.urlencoded({ extended: false }));
-		app.get('/pytask', (req: any, res: any) => {
-			
-		});
 		app.post('/pytask', (req: any, res: any) => {
 			console.log(req.body);
 			if (req.body.exitcode === 0) {
@@ -253,7 +250,7 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 		// Start Pytask Collection
-		const np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'collect'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+		const np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'collect'], { cwd : workingdirectory, encoding: 'utf8', env : {...process.env, PYTASK_VSCODE: 'True'}}, function(err,stdout,stderr){
 			if (stderr.length > 2){
 				vscode.window.showErrorMessage(stderr);
 			}
@@ -344,9 +341,6 @@ export function activate(context: vscode.ExtensionContext) {
 			const app = express();
 			app.use(bodyParser.json());
 			app.use(bodyParser.urlencoded({ extended: false }));
-			app.get('/pytask', (req: any, res: any) => {
-				
-			});
 			app.post('/pytask', (req: any, res: any) => {
 				try {
 					console.log('hier');
@@ -369,7 +363,7 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 			const server = app.listen(6000,'localhost');
 			// Start Pytask
-			np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'].concat(options), { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+			np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'].concat(options), { cwd : workingdirectory, encoding: 'utf8', env : {...process.env, PYTASK_VSCODE: 'True'}}, function(err,stdout,stderr){
 				
 				if (stderr.length > 2){
 					vscode.window.showErrorMessage(stderr);
@@ -422,7 +416,7 @@ export function activate(context: vscode.ExtensionContext) {
 				
 			});
 			if (!run.token.isCancellationRequested){
-				np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'], { cwd : workingdirectory, encoding: 'utf8'}, function(err,stdout,stderr){
+				np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'], { cwd : workingdirectory, encoding: 'utf8', env : {...process.env, PYTASK_VSCODE: 'True'}}, function(err,stdout,stderr){
 					if (stderr.length > 2){
 						vscode.window.showErrorMessage(stderr);
 					}

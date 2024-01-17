@@ -46,7 +46,7 @@ export async function getEnvName(path:string) {
 export function checkIfModulesInstalled(interpreter: string) : Boolean{
     const stdout = child.execSync(interpreter + " -m pip list");
         
-    if (stdout.includes('pytask-vscode')){
+    if (stdout.includes('pytask')){
         return true;
     };
     return false;
