@@ -343,7 +343,6 @@ export function activate(context: vscode.ExtensionContext) {
 			app.use(bodyParser.urlencoded({ extended: false }));
 			app.post('/pytask', (req: any, res: any) => {
 				try {
-					console.log('hier');
 					console.log(req.body.name);
 					let test = controller.items.get(req.body.name);
 					if (req.body.outcome !== 'TaskOutcome.FAIL' && req.body.outcome !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
