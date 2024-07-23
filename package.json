@@ -29,6 +29,11 @@
             "list"
           ],
           "description": "Select how to input Pytasks Command Line Options."
+        },
+        "pytask.port": {
+          "type": "integer",
+          "default": 6000,
+          "description": "Select the port that will be used to communicate with Pytask."
         }
       }
     },

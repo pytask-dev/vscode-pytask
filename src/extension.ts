@@ -6,6 +6,7 @@ import * as path from 'path';
 import * as express from 'express';
 
 const util = require('node:util');
+const EventEmitter = require('node:events');
 
 
 // Settings for the pseudoterminal
@@ -124,16 +125,73 @@ export function activate(context: vscode.ExtensionContext) {
 		
 		createDag();
 	});
-	
+	let RunEnd = new EventEmitter();
 	const writeEmitter = new vscode.EventEmitter<string>();
 	const controller = vscode.tests.createTestController(
 		'pytask',
 		'Pytask'
 	);
+	var current_run : vscode.TestRun;
+	RunEnd.on('end', (data: any) => {current_run.end();});
 	vscode.commands.executeCommand('testing.clearTestResults');
 	//Creates the pytask channel, where the Pytask CLI Output will be displayed
 	const channel = vscode.window.createOutputChannel("Pytask");
+	const express = require('express');
+	const bodyParser = require('body-parser');
+	const app = express();
+	var response_counter = 0;
+	var all_reports_rec = false;
+	var end_report = false;
+	app.use(bodyParser.json());
+	app.use(bodyParser.urlencoded({ extended: false }));
+	app.post('/pytask/collect', (req: any, res: any) => {
+		console.log(req.body);
+		if (req.body.exitcode === "OK") {
+			let collection = [];
+			for (const task of req.body.tasks) {
+				let uri = vscode.Uri.file(task.path);
+				let testitem = controller.createTestItem(task.name,task.name,uri);
+				testitem.tags = [...testitem.tags, pytaskTag];
+				collection.push(testitem);
+			}
+			controller.items.replace(collection);
+		}else {
+			vscode.window.showErrorMessage("Pytask Failed during Collection: Look at the Output Channel for further Information.");
+		}
+		res.json({answer : 'res'});
+	});
+	app.post('/pytask/run', (req: any, res: any) => {
+		try {
 
+			let test = controller.items.get(req.body.name);
+			if (req.body.outcome !== 'TaskOutcome.FAIL' && req.body.outcome !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+				console.log(test);
+				current_run.passed(test!);
+			} else if (req.body.outcome === 'TaskOutcome.FAIL') {
+				current_run.failed(test!, new vscode.TestMessage(req.body.exc_info));
+			} else if (req.body.outcome === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
+				current_run.failed(test!, new vscode.TestMessage('Skipped bedcause previous failed!'));
+			};
+			response_counter++;
+			test!.busy = false;
+		} catch (error) {
+			console.log(error);
+			RunEnd.emit('end');
+		}
+		console.log(response_counter);
+		if (response_counter === controller.items.size){
+			all_reports_rec = true;
+			response_counter = 0;
+		}
+		if (all_reports_rec && end_report){
+			RunEnd.emit('end');
+			all_reports_rec = false;
+			end_report = false;
+		}
+		res.json({answer : 'response'});
+	});
+	let server = app.listen(vscode.workspace.getConfiguration().get('pytask.port'),'localhost');
+	vscode.workspace.onDidChangeConfiguration(e => {if(e.affectsConfiguration('pytask.port')){server = app.listen(vscode.workspace.getConfiguration().get('pytask.port'),'localhost');};});
 	// Checks for tasks the first time the testing window is opened
 	controller.resolveHandler = async test => {
 		try {
@@ -170,7 +228,8 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		if (shouldDebug === false){
 			vscode.commands.executeCommand('testing.clearTestResults');
-			const run = controller.createTestRun(request,'Pytask');
+			let run = controller.createTestRun(request,'Pytask');
+			current_run = run;
 			controller.items.forEach(test => {
 				run.started(test);
 			});
@@ -181,7 +240,7 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			
 		} else {
-			const run = controller.createTestRun(request,'Pytask');
+			let run = controller.createTestRun(request,'Pytask');
 			runPytask(run);
 			debugTasks();
 		}
@@ -207,29 +266,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Collects all the Tasks to display them in the Test View
 	async function collctTasks() {
-		const express = require('express');
-		const bodyParser = require('body-parser');
-		const app = express();
-		app.use(bodyParser.json());
-		app.use(bodyParser.urlencoded({ extended: false }));
-		app.post('/pytask', (req: any, res: any) => {
-			console.log(req.body);
-			if (req.body.exitcode === 0) {
-				let collection = [];
-				for (const task of req.body.tasks) {
-					let uri = vscode.Uri.file(task.path);
-					let testitem = controller.createTestItem(task.name,task.name,uri);
-					testitem.tags = [...testitem.tags, pytaskTag];
-					console.log(testitem.tags);
-					collection.push(testitem);
-				}
-				controller.items.replace(collection);
-			}else {
-				vscode.window.showErrorMessage("Pytask Failed during Collection: Look at the Output Channel for further Information.");
-			}
-			res.json({answer : 'res'});
-		});
-		const server = app.listen(6000,'localhost');
 		//Selecting the python interpreter
 		let interpreter = await utils.getInterpreter();
 		let workingdirectory = "";
@@ -241,7 +277,6 @@ export function activate(context: vscode.ExtensionContext) {
 		} 
 		else {
 			let message = "Working folder not found, open a folder and try again" ;
-		
 			vscode.window.showErrorMessage(message);
 		}
 		//When the Interpreter is found, check if the Pytask-VSCode Module is installed
@@ -250,12 +285,11 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 		// Start Pytask Collection
-		const np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'collect'], { cwd : workingdirectory, encoding: 'utf8', env : {...process.env, PYTASK_VSCODE: 'True'}}, function(err,stdout,stderr){
+		const np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'collect'], { cwd : workingdirectory, encoding: 'utf8', env : {...process.env, PYTASK_VSCODE: vscode.workspace.getConfiguration().get('pytask.port')}}, function(err,stdout,stderr){
 			if (stderr.length > 2){
 				vscode.window.showErrorMessage(stderr);
 			}
 			channel.appendLine(stdout);
-			server.close();
 			
 			
 		});
@@ -264,6 +298,7 @@ export function activate(context: vscode.ExtensionContext) {
 	async function runPytask(run : vscode.TestRun) {
 		//Find the python interpreter
 		let interpreter =  await utils.getInterpreter();
+		let response_counter = 0;
 		if (!utils.checkIfModulesInstalled(interpreter)){
 			run.end();
 			vscode.window.showErrorMessage('Pytask-Vscode is not installed in your current environment (' + await utils.getEnvName(interpreter) + ')');
@@ -335,79 +370,24 @@ export function activate(context: vscode.ExtensionContext) {
 				
 			};
 			
-			// Start a server that is listening on Port 6000 for data from pytask
-			const express = require('express');
-			const bodyParser = require('body-parser');
-			const app = express();
-			app.use(bodyParser.json());
-			app.use(bodyParser.urlencoded({ extended: false }));
-			app.post('/pytask', (req: any, res: any) => {
-				try {
-					console.log(req.body.name);
-					let test = controller.items.get(req.body.name);
-					if (req.body.outcome !== 'TaskOutcome.FAIL' && req.body.outcome !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-						run.passed(test!);
-					} else if (req.body.outcome === 'TaskOutcome.FAIL') {
-						run.failed(test!, new vscode.TestMessage(req.body.exc_info));
-						console.log(req.body.exc_info);
-					} else if (req.body.outcome === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-						run.failed(test!, new vscode.TestMessage('Skipped because previous Task failed!'));
-					};
-					test!.busy = false;
-				} catch (error) {
-					console.log(error);
-					run.end();
-				}
-				res.json({answer : 'response'});
-			});
-			const server = app.listen(6000,'localhost');
 			// Start Pytask
-			np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'].concat(options), { cwd : workingdirectory, encoding: 'utf8', env : {...process.env, PYTASK_VSCODE: 'True'}}, function(err,stdout,stderr){
+			np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'].concat(options), { cwd : workingdirectory, encoding: 'utf8', env : {...process.env, PYTASK_VSCODE: vscode.workspace.getConfiguration().get('pytask.port')}}, function(err,stdout,stderr){
 				
 				if (stderr.length > 2){
 					vscode.window.showErrorMessage(stderr);
 					run.appendOutput('Run failed!');
 				}
-				controller.items.forEach(test => {
-					test.busy = false;
-				});
 				channel.appendLine(stdout);
 				run.appendOutput(formatText(stdout));
+				while (response_counter !== controller.items.size){
+
+				}
 				run.end();
-				server.close();
 			});	
 
 		} else{
-			const express = require('express');
-			const bodyParser = require('body-parser');
-			const app = express();
-			app.use(bodyParser.json());
-			app.use(bodyParser.urlencoded({ extended: false }));
-			app.get('/pytask', (req: any, res: any) => {
-				
-			});
-			app.post('/pytask', (req: any, res: any) => {
-				try {
-					console.log(req.body.name);
-					let test = controller.items.get(req.body.name);
-					if (req.body.outcome !== 'TaskOutcome.FAIL' && req.body.outcome !== 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-						console.log(test);
-						run.passed(test!);
-					} else if (req.body.outcome === 'TaskOutcome.FAIL') {
-						run.failed(test!, new vscode.TestMessage(req.body.exc_info));
-					} else if (req.body.outcome === 'TaskOutcome.SKIP_PREVIOUS_FAILED'){
-						run.failed(test!, new vscode.TestMessage('Skipped bedcause previous failed!'));
-					};
-					test!.busy = false;
-				} catch (error) {
-					console.log(error);
-					run.end();
-				}
-				res.json({answer : 'response'});
-			});
-			const server = app.listen(6000,'localhost');
+			
 			run.token.onCancellationRequested(() => {
-				server.close();
 				np.kill();
 				run.appendOutput('Run cancelled.\n');
 				run.end();
@@ -415,18 +395,19 @@ export function activate(context: vscode.ExtensionContext) {
 				
 			});
 			if (!run.token.isCancellationRequested){
-				np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'], { cwd : workingdirectory, encoding: 'utf8', env : {...process.env, PYTASK_VSCODE: 'True'}}, function(err,stdout,stderr){
+				np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'], { cwd : workingdirectory, encoding: 'utf8', env : {...process.env, PYTASK_VSCODE: vscode.workspace.getConfiguration().get('pytask.port')}}, function(err,stdout,stderr){
 					if (stderr.length > 2){
 						vscode.window.showErrorMessage(stderr);
 					}
-					controller.items.forEach(test => {
-						test.busy = false;
-					});
 					console.log(stdout);
 					channel.appendLine(stdout);
 					run.appendOutput(formatText(stdout));
-					run.end();
-					server.close();
+					end_report = true;
+					if (all_reports_rec && end_report){
+						RunEnd.emit('end');
+						all_reports_rec = false;
+						end_report = false;
+					}
 				});
 			};	
 		};
