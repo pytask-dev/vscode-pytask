@@ -9,14 +9,12 @@ repos:
     -   id: check-vcs-permalinks
     -   id: check-yaml
     -   id: debug-statements
-        exclude: (debugging\.py)
     -   id: end-of-file-fixer
     -   id: fix-byte-order-marker
     -   id: mixed-line-ending
     -   id: no-commit-to-branch
         args: [--branch, main]
     -   id: trailing-whitespace
-        exclude: (__snapshots__)
 -   repo: https://github.com/executablebooks/mdformat
     rev: 0.7.17
     hooks:
@@ -27,16 +25,6 @@ repos:
             mdformat-pyproject,
         ]
         files: (README\.md)
--   repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.17
-    hooks:
-    -   id: mdformat
-        additional_dependencies: [
-            mdformat-myst,
-            mdformat-black,
-            mdformat-pyproject,
-        ]
-        files: (docs/.)
 -   repo: meta
     hooks:
     -   id: check-hooks-apply
