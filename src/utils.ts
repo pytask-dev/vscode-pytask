@@ -22,8 +22,8 @@ export async function getInterpreter(): Promise<string> {
         vscode.window.showErrorMessage('No python interpreter found!');
         return 'undefined';
     }
-        
-    
+
+
 }
 export async function getEnvName(path:string) {
     const extension = vscode.extensions.getExtension('ms-python.python');
@@ -45,7 +45,7 @@ export async function getEnvName(path:string) {
 }
 export function checkIfModulesInstalled(interpreter: string) : Boolean{
     const stdout = child.execSync(interpreter + " -m pip list");
-        
+
     if (stdout.includes('pytask')){
         return true;
     };
@@ -60,4 +60,3 @@ export function checkOpenTerminal(terminals: readonly vscode.Terminal[]): vscode
     });
     return value;
 }
-
