@@ -122,7 +122,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "pytask" is now active!');
 	let disposable = vscode.commands.registerCommand('pytask.createDAG', () => {
-		
+
 		createDag();
 	});
 	let RunEnd = new EventEmitter();
@@ -199,7 +199,7 @@ export function activate(context: vscode.ExtensionContext) {
 		} catch (error) {
 			vscode.window.showErrorMessage('The following Error occured during Collection: ' + error);
 		}
-		
+
 		vscode.commands.executeCommand('testing.clearTestResults');
 		const watcher = vscode.workspace.createFileSystemWatcher('**/*.py');
 		watcher.onDidChange(uri => {if (uri.path.includes('task')){collctTasks();}}); // listen to files being changed
@@ -213,7 +213,7 @@ export function activate(context: vscode.ExtensionContext) {
 		} catch (error:any) {
 			vscode.window.showErrorMessage('The following Error occured during Collection: ' + error);
 		}
-		
+
 	};
 	//Is used when the user starts a pytask run
 	function runHandler(
@@ -238,7 +238,7 @@ export function activate(context: vscode.ExtensionContext) {
 			} catch (error:any) {
 				vscode.window.showErrorMessage('The following Error occured during durin the Run: ' + error);
 			}
-			
+
 		} else {
 			let run = controller.createTestRun(request,'Pytask');
 			runPytask(run);
@@ -252,7 +252,7 @@ export function activate(context: vscode.ExtensionContext) {
 		(request, token) => {
 		  runHandler(false, request, token);
 		}
-		
+
 	);
 	runProfile.tag = pytaskTag;
 	//The Debug Profile for starting pytask in debug mode
@@ -271,10 +271,10 @@ export function activate(context: vscode.ExtensionContext) {
 		let workingdirectory = "";
 		//Find the folder that is currently opened
 		if(vscode.workspace.workspaceFolders !== undefined) {
-			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
+			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ;
 			console.log(workingdirectory);
 
-		} 
+		}
 		else {
 			let message = "Working folder not found, open a folder and try again" ;
 			vscode.window.showErrorMessage(message);
@@ -290,8 +290,8 @@ export function activate(context: vscode.ExtensionContext) {
 				vscode.window.showErrorMessage(stderr);
 			}
 			channel.appendLine(stdout);
-			
-			
+
+
 		});
 	}
 	//Run all Tasks
@@ -308,10 +308,10 @@ export function activate(context: vscode.ExtensionContext) {
 		let np = new child.ChildProcess;
 		//Find the current working directory
 		if(vscode.workspace.workspaceFolders !== undefined) {
-			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
+			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ;
 			console.log(workingdirectory);
 
-		} 
+		}
 		else {
 			let message = "Working folder not found, open a folder and try again" ;
 			vscode.window.showErrorMessage(message);
@@ -319,7 +319,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 		// If one of the Option Modes is selected, promt user for options and create the command line string that will be passed to pytask
 		if (vscode.workspace.getConfiguration().get('pytask.enableCommandLineOptions') === 'textprompt' || vscode.workspace.getConfiguration().get('pytask.enableCommandLineOptions') === 'list'){
-			
+
 			var options: string[] = [];
 
 			if (vscode.workspace.getConfiguration().get('pytask.enableCommandLineOptions') === 'textprompt'){
@@ -347,7 +347,7 @@ export function activate(context: vscode.ExtensionContext) {
 								} else {
 									options = options.concat(['--' + selection[i], value]);
 								}
-								
+
 							} else if (value !== undefined){
 								if (pytask_options[selection[i]].short){
 									options = options.concat(['-' + pytask_options[selection[i]].short, value]);
@@ -355,7 +355,7 @@ export function activate(context: vscode.ExtensionContext) {
 									options = options.concat(['--' + selection[i], value]);
 								}
 							};
-						
+
 						} else {
 							if (pytask_options[selection[i]].short){
 								options = options.concat(['-' + pytask_options[selection[i]].short]);
@@ -364,15 +364,15 @@ export function activate(context: vscode.ExtensionContext) {
 							}
 						};
 					};
-				};					
-	
+				};
+
 				console.log(options);
-				
+
 			};
-			
+
 			// Start Pytask
 			np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'].concat(options), { cwd : workingdirectory, encoding: 'utf8', env : {...process.env, PYTASK_VSCODE: vscode.workspace.getConfiguration().get('pytask.port')}}, function(err,stdout,stderr){
-				
+
 				if (stderr.length > 2){
 					vscode.window.showErrorMessage(stderr);
 					run.appendOutput('Run failed!');
@@ -383,16 +383,16 @@ export function activate(context: vscode.ExtensionContext) {
 
 				}
 				run.end();
-			});	
+			});
 
 		} else{
-			
+
 			run.token.onCancellationRequested(() => {
 				np.kill();
 				run.appendOutput('Run cancelled.\n');
 				run.end();
 				console.log('cancelled');
-				
+
 			});
 			if (!run.token.isCancellationRequested){
 				np = child.execFile(interpreter, ['-Xutf8', '-m', 'pytask', 'build'], { cwd : workingdirectory, encoding: 'utf8', env : {...process.env, PYTASK_VSCODE: vscode.workspace.getConfiguration().get('pytask.port')}}, function(err,stdout,stderr){
@@ -409,7 +409,7 @@ export function activate(context: vscode.ExtensionContext) {
 						end_report = false;
 					}
 				});
-			};	
+			};
 		};
 	}
 	async function debugTasks() {
@@ -418,16 +418,16 @@ export function activate(context: vscode.ExtensionContext) {
 		let workingdirectory = "";
 		//Find the folder that is currently opened
 		if(vscode.workspace.workspaceFolders !== undefined) {
-			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ; 
+			workingdirectory = vscode.workspace.workspaceFolders[0].uri.fsPath ;
 			console.log(workingdirectory);
-		} 
+		}
 		else {
 			let message = "Working folder not found, open a folder and try again" ;
-		
+
 			vscode.window.showErrorMessage(message);
 		}
 		let content = defaultLine;
-		
+
 		//Find the install location of the plugin
 		let myExtDirabs = vscode.extensions.getExtension("mj023.pytask")!.extensionPath;
 		let myExtDir = path.parse(myExtDirabs);
@@ -438,11 +438,11 @@ export function activate(context: vscode.ExtensionContext) {
 		if (pythonextensionsetting === true){
 			await vscode.workspace.getConfiguration().update('python.terminal.activateEnvironment', false, vscode.ConfigurationTarget.Global);
 		}
-		
+
 
 		//When the Interpreter is found, start pytask in debug mode
 		interpreter.then((value: string) => {
-			
+
 			//Spwan Pytask debugger
 			const pytask = child.spawn(value, ['-Xutf8','-m','pytask', '--pdb'], { cwd : workingdirectory});
 			//Catch stdout and send it to the writeEmitter of the Pseudoterminal
@@ -497,13 +497,13 @@ export function activate(context: vscode.ExtensionContext) {
 			pty,
 			});
 			terminal.show();
-			
+
 		});
 		await vscode.workspace.getConfiguration().update('python.terminal.activateEnvironment',pythonextensionsetting , vscode.ConfigurationTarget.Global);
 	}
 	async function createDag() {
 	}
-	
+
 
 }
 
